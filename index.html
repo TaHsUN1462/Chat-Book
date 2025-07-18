@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;"> -->
+  <title>Messenger Style Chat</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topRow">
+      <div>Chat Book</div>
+      <button id="logout-btn" style="display:none;">Logout</button>
+    </header>
+
+    <div id="auth-section">
+      <form id="auth-form" onsubmit="return false;">
+        <div id="login-form">
+          <input id="li-email" type="email" placeholder="Email" required />
+          <input id="li-password" type="password" placeholder="Password" required />
+          <button id="login-btn" type="submit">Login</button>
+          <div class="toggle-link" id="to-signup">Don't have an account? Sign up</div>
+        </div>
+        <div id="signup-form" style="display:none;">
+          <input id="su-email" type="email" placeholder="Email" required />
+          <input id="su-username" type="text" placeholder="Username" required />
+          <input id="su-password" type="password" placeholder="Password" required />
+          <button id="signup-btn" type="submit">Sign Up</button>
+          <div class="toggle-link" id="to-login">Already have an account? Login</div>
+        </div>
+      </form>
+    </div>
+
+    <div id="main" style="display:none;">
+      <section id="userlist-screen">
+        <h3 id="userlist-title">People</h3>
+        <div id="userlist"></div>
+      </section>
+
+      <section id="chat-screen">
+        <div id="chat-header">
+          <button id="back-btn" title="Back">
+            <svg width="24" height="24" fill="#007bff" viewBox="0 0 24 24">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <div id="chat-with-name"></div>
+        </div>
+        <div id="messages"></div>
+        <textarea id="msg-input" placeholder="Type your message..." disabled></textarea>
+        <button id="send-btn" disabled>Send</button>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
