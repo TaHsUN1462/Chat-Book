@@ -228,9 +228,13 @@ onAuthStateChanged(auth, user => {
     authSection.style.display = "none";
     main.style.display = "flex";
     logoutBtn.style.display = "block";
+    signupForm.style.display = "none"
+    loginForm.style.display = "flex"
     loadUsers();
   } else {
     currentUser = null;
+    loginForm.style.display = "flex"
+    signupForm.style.display = "none"
     if (usersRef && usersListener) {
       off(usersRef, "value", usersListener);
       usersListener = null;
@@ -251,19 +255,19 @@ function setupToggle(inputId, toggleBtnId) {
     if (input.type === "password") {
       input.type = "text";
       toggleBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+ <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.38 20.38 0 0 1 5.6-7.18"/>
-          <path d="M1 1l22 22"/>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
         </svg>
       `;
     } else {
       input.type = "password";
       toggleBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
+          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.38 20.38 0 0 1 5.6-7.18"/>
+          <path d="M1 1l22 22"/>
         </svg>
       `;
     }

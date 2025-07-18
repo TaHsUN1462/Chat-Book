@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Messenger Style Chat</title>
   <link rel="stylesheet" href="styles.css" />
@@ -23,10 +23,11 @@
           <div class="password-wrapper">
             <input id="li-password" type="password" placeholder="Password" required />
             <button type="button" class="password-toggle-btn" id="li-toggle">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.38 20.38 0 0 1 5.6-7.18"/>
+          <path d="M1 1l22 22"/>
+        </svg>
             </button>
           </div>
           <button id="login-btn" type="submit">Login</button>
@@ -43,10 +44,11 @@
           <div class="password-wrapper">
             <input id="su-password" type="password" placeholder="Password" required />
             <button type="button" class="password-toggle-btn" id="su-toggle">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.38 20.38 0 0 1 5.6-7.18"/>
+          <path d="M1 1l22 22"/>
+        </svg>
             </button>
           </div>
           <button id="signup-btn" type="submit">Sign Up</button>
@@ -57,22 +59,21 @@
 
     <div id="main" style="display:none;">
       <section id="userlist-screen">
-        <h3 id="userlist-title">People</h3>
         <div id="userlist"></div>
       </section>
 
       <section id="chat-screen">
         <div id="chat-header">
           <button id="back-btn" title="Back">
-            <svg width="24" height="24" fill="#007bff" viewBox="0 0 24 24">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
+            <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M31.35 42.6 13.8 25.05q-.25-.25-.35-.5-.1-.25-.1-.55 0-.3.1-.55.1-.25.35-.5L31.35 5.4q.55-.55 1.4-.55.85 0 1.4.55.6.6.6 1.425 0 .825-.6 1.425L18.4 24l15.75 15.75q.65.65.6 1.45-.05.8-.6 1.35-.6.6-1.425.6-.825 0-1.375-.55Z"/></svg>
           </button>
           <div id="chat-with-name"></div>
         </div>
         <div id="messages"></div>
+        <div class="send-row">
         <textarea id="msg-input" placeholder="Type your message..." disabled></textarea>
-        <button id="send-btn" disabled>Send</button>
+        <button id="send-btn" disabled><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M8.1 39.1q-.75.3-1.425-.125T6 37.75V28.9q0-.55.325-.95.325-.4.825-.5L21.1 24 7.15 20.45q-.5-.1-.825-.5Q6 19.55 6 19v-8.75q0-.8.675-1.225Q7.35 8.6 8.1 8.9l32.6 13.7q.9.4.9 1.4 0 1-.9 1.4Z"/></svg></button>
+        </div>
       </section>
     </div>
   </div>

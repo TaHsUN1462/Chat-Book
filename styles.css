@@ -1,9 +1,10 @@
 * {
   box-sizing: border-box;
-}
-body, html {
+  transition: 200ms ease all;
   margin: 0;
   padding: 0;
+}
+body, html {
   height: 100%;
   font-family: 'Segoe UI', Tahoma, sans-serif;
   background: #f0f2f5;
@@ -26,7 +27,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
+  padding: 0 10px;
   transition: opacity 0.3s ease;
 }
 #logout-btn {
@@ -35,7 +36,7 @@ header {
   color: white;
   font-weight: 700;
   font-size: 0.9rem;
-  cursor: default !important;
+  
 }
 #auth-section {
   flex: 1;
@@ -81,7 +82,7 @@ button {
   background: #007bff;
   color: white;
   transition: background-color 0.2s ease;
-  cursor: default !important;
+  
 }
 button:hover {
   background: #0056b3;
@@ -90,7 +91,7 @@ button:hover {
   text-align: center;
   font-weight: 600;
   color: #007bff;
-  cursor: default !important;
+  
 }
 .toggle-link:hover {
   text-decoration: underline;
@@ -124,12 +125,13 @@ button:hover {
   width: 100%;
   background: #f2f2f2;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: 2px;
   font-weight: 600;
-  cursor: default !important;
+  height: 60px;
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
 }
 .user-item:hover {
   background: #007bff;
@@ -137,13 +139,12 @@ button:hover {
 }
 #chat-screen {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: -50px; left: 0; right: 0; bottom: 0;
   background: #fafafa;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
   transition: transform 0.3s ease, opacity 0.3s ease;
-  padding: 1rem;
   z-index: 10;
   pointer-events: none;
   opacity: 0;
@@ -154,16 +155,22 @@ button:hover {
   opacity: 1;
 }
 #chat-header {
+  position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 1rem;
+  justify-content: center;
+  height: 50px;
+  border: 1px solid #000;
+  text-align: center;
 }
 #back-btn {
+  position: absolute;
+  left: 10px;
   background: none;
   border: none;
   margin-right: 1rem;
   padding: 0;
-  cursor: default !important;
+  color: #007bff;
 }
 #chat-with-name {
   font-weight: 700;
@@ -179,8 +186,7 @@ button:hover {
   overflow-y: auto;
   padding: 1rem;
   background: white;
-  border-radius: 8px;
-  margin-bottom: 1rem;
+  border-radius: 0;
   border: 1px solid #ddd;
 }
 .message {
@@ -209,20 +215,30 @@ button:hover {
 }
 #msg-input {
   width: 100%;
-  padding: 0.7rem 1rem;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 0;
   border: 2px solid #ccc;
   font-size: 1rem;
-  height: 60px;
+  height: 100px;
   outline: none;
+  resize: none;
 }
 #msg-input:focus {
   border-color: #007bff;
   box-shadow: 0 0 0 2px #007bff33;
 }
-#send-btn {
-  margin-top: 0.6rem;
-  cursor: default !important;
+#send-btn{
+  position: absolute;
+  right: 0;
+  bottom: 100px;
+  width: 50px;
+  height: 50px;
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  border-radius: 10px;
 }
 #send-btn:disabled {
   background: #8abafc;
@@ -231,6 +247,8 @@ button:hover {
 
 /* Online and offline dots */
 .online-dot {
+  position: absolute;
+  right: 30px;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -335,12 +353,14 @@ button:hover {
   height: 28px;
   background: transparent;
   border: none;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #007bff;
   padding: 0;
+}
+.password-toggle-btn:hover, .password-toggle-btn:active{
+  background: transparent;
 }
 .password-toggle-btn svg {
   width: 20px;
@@ -349,5 +369,12 @@ button:hover {
 .user-row {
   padding: 12px;
   border-bottom: 1px solid #ccc;
-  cursor: pointer;
+}
+.send-row{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  /* border: 1px solid #000; */
 }
