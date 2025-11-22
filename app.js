@@ -450,7 +450,7 @@ function displaySaves(){
     }
     row.appendChild(deleteBtn)
     row.onclick = () => {
-      showLoading(item.username)
+      showLoading("Loading account <b>"+item.username+"<b> ...")
       signInWithEmailAndPassword(auth, item.email, item.pass)
     .then(() => {
       changeAuth()
@@ -529,9 +529,9 @@ document.querySelector('.closeMenu').addEventListener("click", ()=>{
   document.querySelector('.menu').classList.remove("shown");
   document.querySelector('.overlay').classList.remove("shown");
 })
-function showLoading(username){
+function showLoading(msg){
   document.querySelector('.loader').classList.add("shown");
-  document.querySelector('.loader .text').innerHTML = `Loading account <b>${username}<b> ...`
+  document.querySelector('.loader .text').innerHTML = `${msg}`
   document.querySelector('.loaderbar').style.animation = "showLoading 500ms ease-out forwards"
 }
 function closeLoading(){
@@ -579,22 +579,4 @@ document.querySelector('.closePasswordChange').addEventListener("click", ()=>{
 document.getElementById('changeUsernameSubmit').onclick = async() =>{
   const snap = await get(ref(db, "users"));
   let users = snap.val() || {};
-  let newUsername = document.getElementById('currentUsernameInput').value.trim();
-  // let findUser = users.find(i=> i.username === newUsername);
-  let ok = !Object.values(users).some(u=> u.username === newUsername)
-  if(!ok){
-  alert("Same username exist", ()=>{
-    document.querySelector('.overlay').classList.add("shown");
-  })
-  }else{
-    let uniqueid = currentUser.uid;
-    console.log(uniqueid);
-    update(ref(db, "users/" + uniqueid), { username: newUsername })
-    alert("Username change successful", ()=>{
-      document.querySelector('.usernameChange').classList.remove("shown");
-  document.querySelector('.overlay').classList.remove("shown");
-  document.querySelector('.menu').classList.remove("shown");
-  document.getElementById('currentUsernameInput').value = "";
-    })
-  }
-};
+  let newUsername = do
