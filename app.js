@@ -579,4 +579,38 @@ document.querySelector('.closePasswordChange').addEventListener("click", ()=>{
 document.getElementById('changeUsernameSubmit').onclick = async() =>{
   const snap = await get(ref(db, "users"));
   let users = snap.val() || {};
-  let newUsername = do
+  let newUsername = document.getElementById('currentUsernameInput').value.trim();
+  // let findUser = users.find(i=> i.username === newUsername);
+  let ok = !Object.values(users).some(u=> u.username === newUsername)
+  if(!ok){
+  alert("Same username exist", ()=>{
+    document.querySelector('.overlay').classList.add("shown");
+  })
+  }else{
+    let uniqueid = currentUser.uid;
+    console.log(uniqueid);
+    update(ref(db, "users/" + uniqueid), { username: newUsername })
+    alert("Username change successful", ()=>{
+      document.querySelector('.usernameChange').classList.remove("shown");
+  document.querySelector('.overlay').classList.remove("shown");
+  document.querySelector('.menu').classList.remove("shown");
+  document.getElementById('currentUsernameInput').value = "";
+    })
+  }
+};
+
+function checkLoading(callback) {
+    if (document.readyState !== "complete") {
+        showLoading("Wait while its loading")
+        document.addEventListener("readystatechange", () => {
+            if (document.readyState === "complete") callback();
+        });
+    } else {
+        callback();
+    }
+}
+
+checkLoading(() => {
+    console.log("Page fully loaded!");
+    closeLoading()
+});
