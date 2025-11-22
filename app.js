@@ -1,11 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import {
-  getDatabase, ref, set, push, onValue, onDisconnect, off
+  getDatabase, ref, get, set, push, onValue, onDisconnect, off, update, remove
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  onAuthStateChanged, signOut
+  onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
 
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -25,6 +27,7 @@ const auth = getAuth();
 const authSection = document.getElementById("auth-section");
 const main = document.getElementById("main");
 const logoutBtn = document.getElementById("logout-btn");
+const menuBtn = document.getElementById("menu-btn");
 const topRow = document.getElementById("topRow");
 
 const loginForm = document.getElementById("login-form");
@@ -51,7 +54,7 @@ const backBtn = document.getElementById("back-btn");
 const msgInput = document.getElementById("msg-input");
 const sendBtn = document.getElementById("send-btn");
 
-let currentUser = null;
+let currentUser = null, currentUsername = null;
 let currentChatId = null;
 let selectedUser = null;
 
@@ -81,10 +84,14 @@ signupBtn.onclick = () => {
   createUserWithEmailAndPassword(auth, email, password)
     .then(userCred => {
       const uid = userCred.user.uid;
-      set(ref(db, "users/" + uid), { username, email, online: true });
+      let avatar = generateColor()
+      set(ref(db, "users/" + uid), { username,password, email, online: true, avatar });
+      userIdSaved.push({email: suEmail.value, pass: suPass.value})
+      save()
       suEmail.value = "";
       suPass.value = "";
       suUsername.value = "";
+      changeAuth();
       alert("Signup successful");
     })
     .catch(err => alert(err.message));
@@ -101,12 +108,42 @@ loginBtn.onclick = () => {
 
   signInWithEmailAndPassword(auth, email, password)
     .then(() => {
+      userIdSaved.push({email: liEmail.value, pass: liPass.value})
+      save()
       liEmail.value = "";
       liPass.value = "";
+      changeAuth();
     })
     .catch(err => alert(err.message));
 };
-
+function changeAuth(){
+  onAuthStateChanged(auth, user => {
+  if (user) {
+    currentUser = user;
+    setUserOnline(user.uid);
+    authSection.style.display = "none";
+    main.style.display = "flex";
+    menuBtn.style.display = "flex";
+    signupForm.style.display = "none"
+    loginForm.style.display = "flex"
+    loadUsers();
+    displaySaves();
+  } else {
+    currentUser = null;
+    loginForm.style.display = "flex"
+    signupForm.style.display = "none"
+    if (usersRef && usersListener) {
+      off(usersRef, "value", usersListener);
+      usersListener = null;
+      usersRef = null;
+    }
+    authSection.style.display = "flex";
+    main.style.display = "none";
+    menuBtn.style.display = "none";
+    userlist.innerHTML = "";
+  }
+});
+}
 function setUserOnline(uid) {
   const userStatusRef = ref(db, "users/" + uid + "/online");
   set(userStatusRef, true);
@@ -126,19 +163,34 @@ function loadUsers() {
     userlist.innerHTML = "";
 
     for (const uid in users) {
-      if (uid === currentUser.uid) continue;
-
+      if (uid === currentUser.uid) {
+        let userToEdit = userIdSaved.find(i=>i.email == users[uid].email)
+        userToEdit.username = users[uid].username
+        userToEdit.avatar = users[uid].avatar
+        document.querySelector('.myavatar').innerHTML = users[uid].username[0];
+        document.querySelector('.myavatar').style.background = users[uid].avatar;
+        document.querySelector('.myname').innerHTML = users[uid].username;
+        currentUsername = users[uid].username;
+        save()
+        // userToEdit.username = users[uid].username
+      }else{
+      
       const user = users[uid];
       const userDiv = document.createElement("div");
+      const userAvatarDiv = document.createElement("div");
       userDiv.className = "user-item";
-
+      userAvatarDiv.className = "user-avatar";
+      userAvatarDiv.innerHTML = user.username[0];
+      userAvatarDiv.style.setProperty("--avatar-bg", user.avatar);
       const dot = document.createElement("span");
       dot.className = "online-dot " + (user.online ? "online" : "offline");
 
-      userDiv.appendChild(dot);
+      userDiv.appendChild(userAvatarDiv);
       userDiv.appendChild(document.createTextNode(user.username));
+      userDiv.appendChild(dot);
       userDiv.onclick = () => openChat(uid, user.username);
       userlist.appendChild(userDiv);
+    }
     }
   };
 
@@ -167,21 +219,39 @@ function loadMessages() {
   onValue(chatRef, snapshot => {
     messagesDiv.innerHTML = "";
     const data = snapshot.val() || {};
-    for (const key in data) {
-      const msg = data[key];
+    const today = new Date().toLocaleDateString("en-GB");
+
+    const msgs = Object.values(data).sort((a, b) =>
+      new Date(a.time).getTime() - new Date(b.time).getTime()
+    );
+
+    let lastDate = "";
+    msgs.forEach(msg => {
       const senderId = msg.sender || "";
+      const msgDate = new Date(msg.time);
+      const dateStr = msgDate.toLocaleDateString("en-GB");
+
+      if (dateStr !== lastDate) {
+        const dateDiv = document.createElement("div");
+        dateDiv.className = "date-separator" + (senderId === currentUser.uid ? " mine-date-separator" : "");
+        dateDiv.textContent = dateStr;
+        messagesDiv.appendChild(dateDiv);
+        lastDate = dateStr;
+      }
+
       const div = document.createElement("div");
       div.className = "message " + (senderId === currentUser.uid ? "from-me" : "from-other");
       div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}</div>`;
       messagesDiv.appendChild(div);
-    }
+    });
+
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
 }
 
 sendBtn.onclick = () => {
   const text = msgInput.value.trim();
-  if (!text) return;
+  if (!text) return alert("No message to send!");
   const chatRef = ref(db, "chats/" + currentChatId);
   push(chatRef, {
     sender: currentUser.uid,
@@ -216,36 +286,40 @@ logoutBtn.onclick = () => {
       usersRef = null;
     }
     set(ref(db, "users/" + currentUser.uid + "/online"), false)
-      .then(() => signOut(auth))
+      .then(() => {
+        signOut(auth)
+        currentUsername = null;
+        document.querySelector('.menu').classList.remove("shown");
+      })
       .catch(err => alert("Logout error: " + err.message));
   });
 };
-
-onAuthStateChanged(auth, user => {
-  if (user) {
-    currentUser = user;
-    setUserOnline(user.uid);
-    authSection.style.display = "none";
-    main.style.display = "flex";
-    logoutBtn.style.display = "block";
-    signupForm.style.display = "none"
-    loginForm.style.display = "flex"
-    loadUsers();
-  } else {
-    currentUser = null;
-    loginForm.style.display = "flex"
-    signupForm.style.display = "none"
-    if (usersRef && usersListener) {
-      off(usersRef, "value", usersListener);
-      usersListener = null;
-      usersRef = null;
-    }
-    authSection.style.display = "flex";
-    main.style.display = "none";
-    logoutBtn.style.display = "none";
-    userlist.innerHTML = "";
-  }
-});
+signOut(auth)
+// onAuthStateChanged(auth, user => {
+//   if (user) {
+//     currentUser = user;
+//     setUserOnline(user.uid);
+//     authSection.style.display = "none";
+//     main.style.display = "flex";
+//     logoutBtn.style.display = "flex";
+//     signupForm.style.display = "none"
+//     loginForm.style.display = "flex"
+//     loadUsers();
+//   } else {
+//     currentUser = null;
+//     loginForm.style.display = "flex"
+//     signupForm.style.display = "none"
+//     if (usersRef && usersListener) {
+//       off(usersRef, "value", usersListener);
+//       usersListener = null;
+//       usersRef = null;
+//     }
+//     authSection.style.display = "flex";
+//     main.style.display = "none";
+//     logoutBtn.style.display = "none";
+//     userlist.innerHTML = "";
+//   }
+// });
 
 // Toggle password visibility
 function setupToggle(inputId, toggleBtnId) {
@@ -340,3 +414,149 @@ function preventScroll(e) {
 function enableScroll() {
   document.body.removeEventListener("touchmove", preventScroll, { passive: false });
 }
+
+function save(){
+  localStorage.setItem("userIdSaved", JSON.stringify(userIdSaved))
+}
+const authForm = document.getElementById('auth-form');
+function displaySaves(){
+  if(userIdSaved.length > 0){
+    authForm.style.display = "none";
+    document.querySelector('.users').innerHTML = "";
+  userIdSaved.forEach((item, index) => {
+    let row = document.createElement("div");
+    row.className = "saved-id-row";
+    row.innerHTML = `
+      <div class="id-avatar" style="--avatar-bg:${item.avatar}">${item.username[0]}</div>
+      <div class="id-name">${item.username}</div>
+    `;
+    let deleteBtn = document.createElement("button")
+    deleteBtn.innerHTML = `
+                <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M24 26.1 13.5 36.6q-.45.45-1.05.45-.6 0-1.05-.45-.45-.45-.45-1.05 0-.6.45-1.05L21.9 24 11.4 13.5q-.45-.45-.45-1.05 0-.6.45-1.05.45-.45 1.05-.45.6 0 1.05.45L24 21.9l10.5-10.5q.45-.45 1.05-.45.6 0 1.05.45.45.45.45 1.05 0 .6-.45 1.05L26.1 24l10.5 10.5q.45.45.45 1.05 0 .6-.45 1.05-.45.45-1.05.45-.6 0-1.05-.45Z"/></svg>
+    `
+    deleteBtn.onclick = (event) => {
+      deleteIdFromSaved(event, index)
+    }
+    row.appendChild(deleteBtn)
+    row.onclick = () => {
+      showLoading(item.username)
+      signInWithEmailAndPassword(auth, item.email, item.pass)
+    .then(() => {
+      changeAuth()
+      closeLoading()
+    })
+    .catch(err => {
+      alert(err.message)
+      closeLoading()
+    });
+    }
+    document.querySelector('.users').appendChild(row);
+  });
+  }else{
+    authForm.style.display = "flex";
+  document.querySelector('.usersSaved').style.display = "none";
+  document.querySelector('.users').innerHTML = "No accounts saved try logging in directly first!";
+  }
+}
+document.getElementById('useAnother').addEventListener("click", ()=>{
+  authForm.style.display = "flex";
+  document.querySelector('.usersSaved').style.display = "none";
+})
+document.querySelectorAll('#useSaved').forEach(el=>
+el.addEventListener("click", ()=>{
+  authForm.style.display = "none";
+  document.querySelector('.usersSaved').style.display = "flex";
+}))
+
+function deleteIdFromSaved(e, index){
+  e.stopPropagation()
+  confirm("Are you sure you want to remove this from saved accounts?", ()=>{
+    userIdSaved.splice(index, 1);
+    displaySaves();
+    save();
+  })
+}
+function generateColor(){
+  let r = Math.floor(Math.random() * 255);
+  let g = Math.floor(Math.random() * 255);
+  let b = Math.floor(Math.random() * 255);
+  return `rgb(${r},${g},${b})`
+}
+displaySaves();
+
+const passwordChangeBtn = document.getElementById('change-password-btn');
+passwordChangeBtn.addEventListener("click",()=>{
+  if(auth.user){
+    let user = auth.currentUser;
+  let email = user.email;
+  let uid = user.uid;
+  console.log(user);
+  sendPasswordResetEmail(auth, email, { url: `https://tahsun1462.github.io/chat-book-password-reset/?uid=${uid}`, handleCodeInApp: true })
+  .then(() => console.log("Reset email sent"))
+  .catch(err => console.error(err));
+  }else{
+    alert("You are not logged in!")
+  }
+});
+
+menuBtn.addEventListener("click", ()=>{
+  document.querySelector('.menu').classList.add("shown");
+})
+document.querySelector('.closeMenu').addEventListener("click", ()=>{
+  document.querySelector('.menu').classList.remove("shown");
+})
+function showLoading(username){
+  document.querySelector('.loader').classList.add("shown");
+  document.querySelector('.loader .text').innerHTML = `Loading account <b>${username}<b> ...`
+  document.querySelector('.loaderbar').style.animation = "showLoading 500ms ease-out forwards"
+}
+function closeLoading(){
+  document.querySelector('.loaderbar').style.animation = "completeLoading 500ms ease-out forwards"
+  setTimeout(() => {
+    document.querySelector('.loader').classList.remove("shown");
+  }, 400);
+}
+document.getElementById('change-username-btn').addEventListener("click", ()=>{
+  document.querySelector('.usernameChange').classList.add("shown");
+  document.querySelector('.overlay').classList.add("shown");
+  document.querySelector('.menu').classList.remove("shown");
+  document.getElementById('currentUsernameInput').value = currentUsername;
+});
+document.getElementById('delete-account-btn').addEventListener("click", ()=>{
+  confirm("Are you sure you want to delete this account?\nNo data can be recovered again!",()=>{
+    confirm("Delete?", ()=>{
+      remove(ref(db, "users/"+currentUser.uid))
+      deleteUser(currentUser)
+        currentUsername = null;
+        document.querySelector('.menu').classList.remove("shown");
+    })
+  })
+});
+document.querySelector('.closeUsernameChange').addEventListener("click", ()=>{
+  document.querySelector('.usernameChange').classList.remove("shown");
+  document.querySelector('.overlay').classList.remove("shown");
+  document.querySelector('.menu').classList.remove("shown");
+  document.getElementById('currentUsernameInput').value = "";
+});
+document.getElementById('changeUsernameSubmit').onclick = async() =>{
+  const snap = await get(ref(db, "users"));
+  let users = snap.val() || {};
+  let newUsername = document.getElementById('currentUsernameInput').value.trim();
+  // let findUser = users.find(i=> i.username === newUsername);
+  let ok = !Object.values(users).some(u=> u.username === newUsername)
+  if(!ok){
+  alert("Same username exist", ()=>{
+    document.querySelector('.overlay').classList.add("shown");
+  })
+  }else{
+    let uniqueid = currentUser.uid;
+    console.log(uniqueid);
+    update(ref(db, "users/" + uniqueid), { username: newUsername })
+    alert("Username change successful", ()=>{
+      document.querySelector('.usernameChange').classList.remove("shown");
+  document.querySelector('.overlay').classList.remove("shown");
+  document.querySelector('.menu').classList.remove("shown");
+  document.getElementById('currentUsernameInput').value = "";
+    })
+  }
+};
