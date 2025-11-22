@@ -91,7 +91,6 @@ signupBtn.onclick = () => {
       suEmail.value = "";
       suPass.value = "";
       suUsername.value = "";
-      console.log(userIdSaved);
       changeAuth();
       alert("Signup successful");
     })
@@ -113,7 +112,6 @@ loginBtn.onclick = () => {
       save()
       liEmail.value = "";
       liPass.value = "";
-      displaySaves()
       changeAuth();
     })
     .catch(err => alert(err.message));
@@ -434,7 +432,7 @@ function displaySaves(){
     let row = document.createElement("div");
     row.className = "saved-id-row";
     row.innerHTML = `
-      <div class="id-avatar" style="--avatar-bg:${item.avatar}">${item.username[0]}</div>
+     <div class="id-avatar" style="--avatar-bg:${item.avatar}">${item.username.charAt(0)}</div>
       <div class="id-name">${item.username}</div>
     `;
     let deleteBtn = document.createElement("button")
