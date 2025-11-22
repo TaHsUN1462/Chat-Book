@@ -582,6 +582,7 @@ button:hover {
   border-radius: 20px;
   scale: 0;
   transform-origin: left top;
+  z-index: 100;
 }
 .menu.shown{
   scale: 1;
@@ -612,7 +613,7 @@ button:hover {
   display: none;
   font-size: 1.2rem;
 }
-.menu .close, .usernameChange .close{
+.menu .close, .usernameChange .close, .passwordChange .close{
   all: unset;
   position: absolute;
   top: 0;
@@ -663,7 +664,7 @@ button:hover {
   opacity: 1;
   pointer-events: auto;
 }
-.usernameChange{
+.usernameChange, .passwordChange{
   position: fixed;
   top: 50%;
   left: 50%;
@@ -684,10 +685,10 @@ button:hover {
   text-align: center;
   z-index: 100;
 }
-.usernameChange.shown{
+.passwordChange.shown, .usernameChange.shown{
   scale: 1;
 }
-.usernameChange input, .usernameChange button{
+.usernameChange input, .usernameChange button, .passwordChange button, .passwordChange input{
   width: 100%;
   height: 50px;
   border-radius: 10px;
