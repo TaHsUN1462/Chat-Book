@@ -91,6 +91,7 @@ signupBtn.onclick = () => {
       suEmail.value = "";
       suPass.value = "";
       suUsername.value = "";
+      console.log(userIdSaved);
       changeAuth();
       alert("Signup successful");
     })
@@ -112,6 +113,7 @@ loginBtn.onclick = () => {
       save()
       liEmail.value = "";
       liPass.value = "";
+      displaySaves()
       changeAuth();
     })
     .catch(err => alert(err.message));
@@ -288,8 +290,12 @@ logoutBtn.onclick = () => {
     set(ref(db, "users/" + currentUser.uid + "/online"), false)
       .then(() => {
         signOut(auth)
+        console.log(userIdSaved);
+        displaySaves()
         currentUsername = null;
         document.querySelector('.menu').classList.remove("shown");
+        authForm.style.display = "none";
+        document.querySelector('.usersSaved').style.display = "flex";
       })
       .catch(err => alert("Logout error: " + err.message));
   });
@@ -421,6 +427,7 @@ function save(){
 const authForm = document.getElementById('auth-form');
 function displaySaves(){
   if(userIdSaved.length > 0){
+    console.log("showing");
     authForm.style.display = "none";
     document.querySelector('.users').innerHTML = "";
   userIdSaved.forEach((item, index) => {
@@ -529,6 +536,7 @@ document.getElementById('delete-account-btn').addEventListener("click", ()=>{
       deleteUser(currentUser)
         currentUsername = null;
         document.querySelector('.menu').classList.remove("shown");
+        alert("Account deleted successfully")
     })
   })
 });
