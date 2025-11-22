@@ -4,9 +4,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser
+  onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
 
 const firebaseConfig = {
@@ -425,16 +424,23 @@ function save(){
 const authForm = document.getElementById('auth-form');
 function displaySaves(){
   if(userIdSaved.length > 0){
-    console.log("showing");
+    console.log(userIdSaved);
     authForm.style.display = "none";
     document.querySelector('.users').innerHTML = "";
   userIdSaved.forEach((item, index) => {
     let row = document.createElement("div");
     row.className = "saved-id-row";
+    if(item.username){
     row.innerHTML = `
      <div class="id-avatar" style="--avatar-bg:${item.avatar}">${item.username.charAt(0)}</div>
       <div class="id-name">${item.username}</div>
     `;
+    }else{
+      row.innerHTML = `
+     <div class="id-avatar" style="--avatar-bg:${item.avatar}">${item.username}</div>
+      <div class="id-name">${item.username}</div>
+    `;
+    }
     let deleteBtn = document.createElement("button")
     deleteBtn.innerHTML = `
                 <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M24 26.1 13.5 36.6q-.45.45-1.05.45-.6 0-1.05-.45-.45-.45-.45-1.05 0-.6.45-1.05L21.9 24 11.4 13.5q-.45-.45-.45-1.05 0-.6.45-1.05.45-.45 1.05-.45.6 0 1.05.45L24 21.9l10.5-10.5q.45-.45 1.05-.45.6 0 1.05.45.45.45.45 1.05 0 .6-.45 1.05L26.1 24l10.5 10.5q.45.45.45 1.05 0 .6-.45 1.05-.45.45-1.05.45-.6 0-1.05-.45Z"/></svg>
@@ -490,25 +496,38 @@ function generateColor(){
 displaySaves();
 
 const passwordChangeBtn = document.getElementById('change-password-btn');
-passwordChangeBtn.addEventListener("click",()=>{
-  if(auth.user){
-    let user = auth.currentUser;
-  let email = user.email;
-  let uid = user.uid;
-  console.log(user);
-  sendPasswordResetEmail(auth, email, { url: `https://tahsun1462.github.io/chat-book-password-reset/?uid=${uid}`, handleCodeInApp: true })
-  .then(() => console.log("Reset email sent"))
-  .catch(err => console.error(err));
-  }else{
-    alert("You are not logged in!")
+const passwordSubmitBtn = document.getElementById('changePasswordSubmit');
+passwordSubmitBtn.addEventListener("click", async () => {
+  const oldPassword = document.getElementById("oldPassword").value;
+  const newPassword = document.getElementById("newPassword").value;
+  const newPasswordC = document.getElementById("newPasswordC").value;
+  const user = auth.currentUser;
+
+  if (!user) return alert("You are not logged in!");
+
+  if (newPassword !== newPasswordC) return alert("Passwords do not match!");
+  
+  const credential = EmailAuthProvider.credential(user.email, oldPassword);
+
+  try {
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
+    let usertochange = userIdSaved.find(u=> u.username === currentUsername)
+    usertochange.pass = newPassword;
+    save();
+    alert("Password updated successfully!");
+  } catch (err) {
+    alert(err.message);
   }
 });
 
 menuBtn.addEventListener("click", ()=>{
   document.querySelector('.menu').classList.add("shown");
+  document.querySelector('.overlay').classList.add("shown");
 })
 document.querySelector('.closeMenu').addEventListener("click", ()=>{
   document.querySelector('.menu').classList.remove("shown");
+  document.querySelector('.overlay').classList.remove("shown");
 })
 function showLoading(username){
   document.querySelector('.loader').classList.add("shown");
@@ -527,6 +546,11 @@ document.getElementById('change-username-btn').addEventListener("click", ()=>{
   document.querySelector('.menu').classList.remove("shown");
   document.getElementById('currentUsernameInput').value = currentUsername;
 });
+passwordChangeBtn.addEventListener("click", ()=>{
+  document.querySelector('.passwordChange').classList.add("shown");
+  document.querySelector('.overlay').classList.add("shown");
+  document.querySelector('.menu').classList.remove("shown");
+});
 document.getElementById('delete-account-btn').addEventListener("click", ()=>{
   confirm("Are you sure you want to delete this account?\nNo data can be recovered again!",()=>{
     confirm("Delete?", ()=>{
@@ -543,6 +567,14 @@ document.querySelector('.closeUsernameChange').addEventListener("click", ()=>{
   document.querySelector('.overlay').classList.remove("shown");
   document.querySelector('.menu').classList.remove("shown");
   document.getElementById('currentUsernameInput').value = "";
+});
+document.querySelector('.closePasswordChange').addEventListener("click", ()=>{
+  document.querySelector('.passwordChange').classList.remove("shown");
+  document.querySelector('.overlay').classList.remove("shown");
+  document.querySelector('.menu').classList.remove("shown");
+  document.getElementById('oldPassword').value = "";
+  document.getElementById('newPassword').value = "";
+  document.getElementById('newPasswordC').value = "";
 });
 document.getElementById('changeUsernameSubmit').onclick = async() =>{
   const snap = await get(ref(db, "users"));
