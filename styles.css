@@ -624,6 +624,7 @@ button:hover {
   justify-content: center;
   align-items: center;
   background: none;
+  color: var(--text-dark);
 }
 .loader{
   z-index: 100000;
