@@ -183,9 +183,10 @@ function loadUsers() {
       userAvatarDiv.style.setProperty("--avatar-bg", user.avatar);
       const dot = document.createElement("span");
       dot.className = "online-dot " + (user.online ? "online" : "offline");
-
+      let userLine = document.createElement("div");
+      userLine.innerHTML = user.username
       userDiv.appendChild(userAvatarDiv);
-      userDiv.appendChild(document.createTextNode(user.username));
+      userDiv.appendChild(userLine);
       userDiv.appendChild(dot);
       userDiv.onclick = () => openChat(uid, user.username);
       userlist.appendChild(userDiv);
