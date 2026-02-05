@@ -312,60 +312,6 @@ button:hover {
   background: var(--offline);
   box-shadow: 0 0 5px var(--offline);
 }
-.dialog {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 280px;
-  background: var(--light-bg);
-  border-radius: 14px;
-  box-shadow: 0 20px 40px var(--shadow-dark);
-  transform: translate(-50%, -50%) scale(0.95);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 102;
-  display: flex;
-  flex-direction: column;
-  text-align: center;
-  transition: 200ms ease all;
-}
-.dialog.shown {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
-  pointer-events: auto;
-}
-.dialog p {
-  font-size: 15px;
-  color: var(--text-light);
-  margin: 20px;
-  white-space: pre-wrap;
-}
-.dialog input {
-  width: 85%;
-  margin: 10px auto 0;
-  padding: 10px;
-  font-size: 15px;
-  border-radius: 10px;
-  border: 1px solid var(--gray-border);
-  outline: none;
-}
-.button-row {
-  display: flex;
-  border-top: 1px solid var(--gray-border);
-}
-.button-row button {
-  flex: 1;
-  font-size: 17px;
-  font-weight: 600;
-  padding: 14px 0;
-  background: var(--light-bg);
-  color: var(--primary);
-  border: none;
-  border-radius: 10px;
-}
-.button-row button:first-child {
-  border-right: 1px solid var(--gray-border);
-}
 .overlay {
   position: fixed;
   inset: 0;
