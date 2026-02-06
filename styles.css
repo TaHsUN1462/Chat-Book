@@ -4,7 +4,7 @@
   --primary-light: #8abafc;
   --white: #ffffff;
   --light-bg: #f0f2f5;
-  --card-bg: #f2f2f2;
+  --card-bg: #d2d2d2;
   --gray-border: #ddd;
   --text-dark: #222;
   --text-light: #3c3c4399;
@@ -180,6 +180,7 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  border-radius: 7px;
   position: relative;
   border: 1px solid var(--gray-border);
 }
@@ -640,4 +641,17 @@ button:hover {
   height: 50px;
   border-radius: 10px;
   border: 1px solid var(--gray-border);
+}
+.tick-icon{
+  position: absolute;
+  bottom: 2px;
+  right: 5px;
+  font-size: 0.5rem;
+  font-weight: 1000;
+}
+.status-sent{
+  color: black;
+}
+.status-seen{
+  color: white;
 }

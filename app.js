@@ -84,7 +84,14 @@ signupBtn.onclick = () => {
     .then(userCred => {
       const uid = userCred.user.uid;
       let avatar = generateColor()
-      set(ref(db, "users/" + uid), { username,password, email, online: true, avatar });
+      set(ref(db, "users/" + uid), { 
+  username, 
+  password, 
+  email, 
+  online: true, 
+  avatar, 
+  lastLoginTime: Date.now() // Store as timestamp for math
+});
       userIdSaved.push({email: suEmail.value, pass: suPass.value})
       save()
       suEmail.value = "";
@@ -95,7 +102,6 @@ signupBtn.onclick = () => {
     })
     .catch(err => alert(err.message));
 };
-
 loginBtn.onclick = () => {
   const email = liEmail.value.trim();
   const password = liPass.value.trim();
@@ -118,6 +124,7 @@ loginBtn.onclick = () => {
 function changeAuth(){
   onAuthStateChanged(auth, user => {
   if (user) {
+    update(ref(db, "users/" + user.uid), { lastLoginTime: Date.now() });
     currentUser = user;
     setUserOnline(user.uid);
     authSection.style.display = "none";
@@ -127,6 +134,7 @@ function changeAuth(){
     loginForm.style.display = "flex"
     loadUsers();
     displaySaves();
+    
   } else {
     currentUser = null;
     loginForm.style.display = "flex"
@@ -166,7 +174,9 @@ function loadUsers() {
         let userToEdit = userIdSaved.find(i=>i.email == users[uid].email)
         userToEdit.username = users[uid].username
         userToEdit.avatar = users[uid].avatar
-        document.querySelector('.myavatar').innerHTML = users[uid].username[0];
+        let reg = new RegExp('<[^>]*>');
+        let avatarSafe = users[uid].username.replace(reg, '');
+        document.querySelector('.myavatar').innerHTML = avatarSafe[0];
         document.querySelector('.myavatar').style.background = users[uid].avatar;
         document.querySelector('.myname').innerHTML = users[uid].username;
         currentUsername = users[uid].username;
@@ -181,7 +191,8 @@ function loadUsers() {
       userNameText.innerHTML = user.username;
       userDiv.className = "user-item";
       userAvatarDiv.className = "user-avatar";
-      userAvatarDiv.innerHTML = user.username[0];
+      let reg = new RegExp('<[^>]*>', 'g');
+      userAvatarDiv.innerHTML = user.username.replace(reg, '')[0];
       userAvatarDiv.style.setProperty("--avatar-bg", user.avatar);
       const dot = document.createElement("span");
       dot.className = "online-dot " + (user.online ? "online" : "offline");
@@ -200,10 +211,33 @@ function loadUsers() {
   });
 }
 
+// function openChat(uid, name) {
+//   selectedUser = uid;
+//   currentChatId = [currentUser.uid, uid].sort().join("_");
+//   chatWithName.innerHTML = name;
+//   chatScreen.classList.add("active");
+//   topRow.style.opacity = "0";
+//   topRow.style.pointerEvents = "none";
+//   logoutBtn.style.opacity = "0";
+//   logoutBtn.style.pointerEvents = "none";
+//   msgInput.disabled = false;
+//   sendBtn.disabled = false;
+//   msgInput.blur();
+//   loadMessages();
+// }
+
 function openChat(uid, name) {
   selectedUser = uid;
   currentChatId = [currentUser.uid, uid].sort().join("_");
-  chatWithName.innerHTML = name;
+  
+  // Get the user data to see their last login
+  get(ref(db, "users/" + uid)).then((snapshot) => {
+    const userData = snapshot.val();
+    const statusText = userData.online ? "Online" : `Last active: ${getRelativeTime(userData.lastLoginTime)}`;
+    chatWithName.innerHTML = `<div>${name}</div><small style="font-size:12px; opacity:0.8;">${statusText}</small>`;
+  });
+
+  // ... rest of your existing code
   chatScreen.classList.add("active");
   topRow.style.opacity = "0";
   topRow.style.pointerEvents = "none";
@@ -215,40 +249,51 @@ function openChat(uid, name) {
   loadMessages();
 }
 
+
 function loadMessages() {
   const chatRef = ref(db, "chats/" + currentChatId);
   onValue(chatRef, snapshot => {
     messagesDiv.innerHTML = "";
     const data = snapshot.val() || {};
-    const today = new Date().toLocaleDateString("en-GB");
+    
+    // Logic to mark messages as seen when the recipient views them
+    Object.keys(data).forEach(key => {
+      if (data[key].sender !== currentUser.uid && !data[key].seen) {
+        update(ref(db, `chats/${currentChatId}/${key}`), { seen: true });
+      }
+    });
 
-    const msgs = Object.values(data).sort((a, b) =>
-      new Date(a.time).getTime() - new Date(b.time).getTime()
-    );
+    const msgs = Object.values(data).sort((a, b) => a.time - b.time);
 
     let lastDate = "";
     msgs.forEach(msg => {
       const senderId = msg.sender || "";
-      const msgDate = new Date(msg.time);
-      const dateStr = msgDate.toLocaleDateString("en-GB");
+      const isMe = senderId === currentUser.uid;
+      const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
 
       if (dateStr !== lastDate) {
         const dateDiv = document.createElement("div");
-        dateDiv.className = "date-separator" + (senderId === currentUser.uid ? " mine-date-separator" : "");
+        dateDiv.className = "date-separator" + (isMe ? " mine-date-separator" : "");
         dateDiv.textContent = dateStr;
         messagesDiv.appendChild(dateDiv);
         lastDate = dateStr;
       }
 
       const div = document.createElement("div");
-      div.className = "message " + (senderId === currentUser.uid ? "from-me" : "from-other");
-      div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}</div>`;
+      div.className = "message " + (isMe ? "from-me" : "from-other");
+      
+      // Logic for tick status
+      const tickClass = msg.seen ? "status-seen" : "status-sent";
+      const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
+
+      div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
       messagesDiv.appendChild(div);
     });
 
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
 }
+
 
 sendBtn.onclick = () => {
   const text = msgInput.value.trim();
@@ -300,32 +345,6 @@ logoutBtn.onclick = () => {
   });
 };
 signOut(auth)
-// onAuthStateChanged(auth, user => {
-//   if (user) {
-//     currentUser = user;
-//     setUserOnline(user.uid);
-//     authSection.style.display = "none";
-//     main.style.display = "flex";
-//     logoutBtn.style.display = "flex";
-//     signupForm.style.display = "none"
-//     loginForm.style.display = "flex"
-//     loadUsers();
-//   } else {
-//     currentUser = null;
-//     loginForm.style.display = "flex"
-//     signupForm.style.display = "none"
-//     if (usersRef && usersListener) {
-//       off(usersRef, "value", usersListener);
-//       usersListener = null;
-//       usersRef = null;
-//     }
-//     authSection.style.display = "flex";
-//     main.style.display = "none";
-//     logoutBtn.style.display = "none";
-//     userlist.innerHTML = "";
-//   }
-// });
-
 // Toggle password visibility
 function setupToggle(inputId, toggleBtnId) {
   const input = document.getElementById(inputId);
@@ -370,8 +389,10 @@ function displaySaves(){
     let row = document.createElement("div");
     row.className = "saved-id-row";
     if(item.username){
+      let reg = new RegExp('<[^>]*>', 'g');
+      let usernameAvatar = item.username.replace(reg, '')[0];
     row.innerHTML = `
-     <div class="id-avatar" style="--avatar-bg:${item.avatar}">${item.username.charAt(0)}</div>
+     <div class="id-avatar" style="--avatar-bg:${item.avatar}">${usernameAvatar}</div>
       <div class="id-name">${item.username}</div>
     `;
     }else{
@@ -554,9 +575,6 @@ checkLoading(() => {
 function notify() {
   onAuthStateChanged(auth, (user) => {
     if (!user) return;
-    let lastLoginTime = new Date(parseFloat(user.metadata.lastLoginAt))
-    let lastLoginTimeString = lastLoginTime.toLocaleDateString() + " " + lastLoginTime.toLocaleTimeString()
-    console.log(lastLoginTimeString);
     onValue(ref(db, "chats"), (snapshot) => {
       snapshot.forEach((child) => {
         const chatId = child.key;
@@ -590,3 +608,12 @@ function notification(title, msg){
   }
 }
 notify();
+function getRelativeTime(ts) {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  const hrs = Math.floor(mins / 60);
+
+  if (mins < 60) return `${mins} minutes ago`;
+  if (hrs < 24) return `${hrs} hours ago`;
+  return formatTime(ts) + " " + new Date(ts).toLocaleDateString("en-GB");
+}
