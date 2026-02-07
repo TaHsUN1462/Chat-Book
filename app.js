@@ -7,7 +7,8 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-
+let redirectUidAndUsername = "n2q5ClCUkecNgWWZxXmkPTBoi0n1|Tahsun2";
+// let redirectUidAndUsername = "";
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
   authDomain: "chat-book-2a28a.firebaseapp.com",
@@ -117,6 +118,7 @@ loginBtn.onclick = () => {
       save()
       liEmail.value = "";
       liPass.value = "";
+
       changeAuth();
     })
     .catch(err => alert(err.message));
@@ -126,17 +128,28 @@ function changeAuth(){
   if (user) {
     update(ref(db, "users/" + user.uid), { lastLoginTime: Date.now() });
     currentUser = user;
+    get(ref(db, "users/" + user.uid))
+      .then(snapshot=>{
+        let currentData = snapshot.val();
+        currentUsername = currentData.username
+        let toChangeSavedId = userIdSaved.find(l=> l.email === currentUser.email)
+        toChangeSavedId.username = currentData.username;
+        toChangeSavedId.avatar = currentData.avatar;
+        save();
+        displaySaves();
+      })
     setUserOnline(user.uid);
     authSection.style.display = "none";
     main.style.display = "flex";
     menuBtn.style.display = "flex";
     signupForm.style.display = "none"
     loginForm.style.display = "flex"
+    document.querySelector('#settings-btn').classList.add("needSpace");
     loadUsers();
     displaySaves();
-    
   } else {
-    currentUser = null;
+    currentUser = null, currentUsername = null;
+    document.querySelector('#settings-btn').classList.remove("needSpace");
     loginForm.style.display = "flex"
     signupForm.style.display = "none"
     if (usersRef && usersListener) {
@@ -157,74 +170,130 @@ function setUserOnline(uid) {
   onDisconnect(userStatusRef).set(false);
 }
 
-function loadUsers() {
-  if (usersRef && usersListener) {
-    off(usersRef, "value", usersListener);
-  }
-
-  usersRef = ref(db, "users");
-  usersListener = snapshot => {
-    if (!currentUser) return;
-
-    const users = snapshot.val() || {};
-    userlist.innerHTML = "";
-
-    for (const uid in users) {
-      if (uid === currentUser.uid) {
-        let userToEdit = userIdSaved.find(i=>i.email == users[uid].email)
-        userToEdit.username = users[uid].username
-        userToEdit.avatar = users[uid].avatar
-        let reg = new RegExp('<[^>]*>');
-        let avatarSafe = users[uid].username.replace(reg, '');
-        document.querySelector('.myavatar').innerHTML = avatarSafe[0];
-        document.querySelector('.myavatar').style.background = users[uid].avatar;
-        document.querySelector('.myname').innerHTML = users[uid].username;
-        currentUsername = users[uid].username;
-        save()
-        // userToEdit.username = users[uid].username
-      }else{
-      
-      const user = users[uid];
-      const userDiv = document.createElement("div");
-      const userAvatarDiv = document.createElement("div");
-      const userNameText = document.createElement("div");
-      userNameText.innerHTML = user.username;
-      userDiv.className = "user-item";
-      userAvatarDiv.className = "user-avatar";
-      let reg = new RegExp('<[^>]*>', 'g');
-      userAvatarDiv.innerHTML = user.username.replace(reg, '')[0];
-      userAvatarDiv.style.setProperty("--avatar-bg", user.avatar);
-      const dot = document.createElement("span");
-      dot.className = "online-dot " + (user.online ? "online" : "offline");
-
-      userDiv.appendChild(userAvatarDiv);
-      userDiv.appendChild(userNameText);
-      userDiv.appendChild(dot);
-      userDiv.onclick = () => openChat(uid, user.username);
-      userlist.appendChild(userDiv);
-    }
-    }
-  };
-
-  onValue(usersRef, usersListener, err => {
-    alert("Failed to load users: " + err.message);
+function removeContact(uid) {
+  confirm("Remove this person from your list? 🚮", () => {
+    remove(ref(db, `users/${currentUser.uid}/contacts/${uid}`));
   });
 }
 
-// function openChat(uid, name) {
-//   selectedUser = uid;
-//   currentChatId = [currentUser.uid, uid].sort().join("_");
-//   chatWithName.innerHTML = name;
-//   chatScreen.classList.add("active");
-//   topRow.style.opacity = "0";
-//   topRow.style.pointerEvents = "none";
-//   logoutBtn.style.opacity = "0";
-//   logoutBtn.style.pointerEvents = "none";
-//   msgInput.disabled = false;
-//   sendBtn.disabled = false;
-//   msgInput.blur();
-//   loadMessages();
+
+// function loadUsers() {
+//   if (usersRef && usersListener) off(usersRef, "value", usersListener);
+//   usersRef = ref(db, "users");
+//   usersListener = snapshot => {
+//     if (!currentUser) return;
+//     const users = snapshot.val() || {};
+//     const myData = users[currentUser.uid] || {};
+//     const myContacts = myData.contacts || {};
+//     userlist.innerHTML = "";
+
+//     const reg = /<[^>]*>/g;
+//     document.querySelector('.myavatar').innerHTML = myData.username?.replace(reg, '')[0] || "";
+//     document.querySelector('.myavatar').style.setProperty("--avatar-bg", myData.avatar);
+//     document.querySelector('.myname').innerHTML = myData.username;
+//     document.querySelector('.my-id-display').innerHTML = `Unique ID: ${currentUser.uid.slice(-6)}`;
+
+//     // Sort: Latest message (lastTs) goes to the top! 📈
+//     const sortedIds = Object.keys(myContacts).sort((a, b) => 
+//       (myContacts[b].lastTs || 0) - (myContacts[a].lastTs || 0)
+//     );
+
+//     sortedIds.forEach(uid => {
+//       const user = users[uid];
+//       if (!user) return;
+//       const userDiv = document.createElement("div");
+//       userDiv.className = "user-item";
+      
+//       const badge = myContacts[uid].unread ? `<span class="badge"></span>` : "";
+//       const avatarChar = user.username.replace(reg, '')[0];
+      
+//       userDiv.innerHTML = `
+//         <div class="user-avatar" style="--avatar-bg: ${user.avatar}">${avatarChar}</div>
+//         <div>${user.username} ${badge}</div>
+//         <span class="online-dot ${user.online ? "online" : "offline"}"></span>
+//       `;
+
+//       userDiv.onclick = () => {
+//         if (myContacts[uid].unread) update(ref(db, `users/${currentUser.uid}/contacts/${uid}`), { unread: false });
+//         openChat(uid, user.username);
+//       };
+
+//       userDiv.onmousedown = () => holdTimer = setTimeout(() => removeContact(uid), 1000);
+//       userDiv.onmouseup = () => clearTimeout(holdTimer);
+//       userDiv.ontouchstart = () => holdTimer = setTimeout(() => removeContact(uid), 1000);
+//       userDiv.ontouchend = () => clearTimeout(holdTimer);
+//       userDiv.ontouchmove = () => clearTimeout(holdTimer);
+//       userlist.appendChild(userDiv);
+//     });
+
+//     if(redirectUidAndUsername){
+//       let [rUid, rUsername] = redirectUidAndUsername.split("|");
+//       openChat(rUid, rUsername);
+//     }
+//   };
+//   onValue(usersRef, usersListener);
 // }
+
+function loadUsers() {
+  if (usersRef && usersListener) off(usersRef, "value", usersListener);
+  usersRef = ref(db, "users");
+  usersListener = snapshot => {
+    if (!currentUser) return;
+    const users = snapshot.val() || {};
+    const myData = users[currentUser.uid] || {};
+    const myContacts = myData.contacts || {};
+    userlist.innerHTML = "";
+
+    const reg = /<[^>]*>/g;
+    document.querySelector('.myavatar').innerHTML = myData.username?.replace(reg, '')[0] || "";
+    document.querySelector('.myavatar').style.setProperty("--avatar-bg", myData.avatar);
+    document.querySelector('.myname').innerHTML = myData.username;
+    
+    const myIdDisplay = document.querySelector('.my-id-display');
+    myIdDisplay.innerHTML = `Unique ID: ${currentUser.uid.slice(-6)}`;
+    myIdDisplay.onclick = () => navigator.clipboard.writeText(`${currentUser.uid.slice(-6)}`);
+
+    const sortedIds = Object.keys(myContacts).sort((a, b) => 
+      (myContacts[b].lastTs || 0) - (myContacts[a].lastTs || 0)
+    );
+
+    sortedIds.forEach(uid => {
+      const user = users[uid];
+      if (!user) return;
+      const userDiv = document.createElement("div");
+      userDiv.className = "user-item";
+      
+      const badge = myContacts[uid].unread ? `<span class="badge"></span>` : "";
+      const avatarChar = user.username.replace(reg, '')[0];
+      
+      userDiv.innerHTML = `
+        <div class="user-avatar" style="--avatar-bg: ${user.avatar}">${avatarChar}</div>
+        <div>${user.username} ${badge}</div>
+        <span class="online-dot ${user.online ? "online" : "offline"}"></span>
+      `;
+
+      userDiv.onclick = () => {
+        if (myContacts[uid].unread) update(ref(db, `users/${currentUser.uid}/contacts/${uid}`), { unread: false });
+        openChat(uid, user.username);
+      };
+
+      userDiv.onmousedown = () => holdTimer = setTimeout(() => removeContact(uid), 1000);
+      userDiv.onmouseup = () => clearTimeout(holdTimer);
+      userDiv.ontouchstart = () => holdTimer = setTimeout(() => removeContact(uid), 1000);
+      userDiv.ontouchend = () => clearTimeout(holdTimer);
+      userDiv.ontouchmove = () => clearTimeout(holdTimer);
+      userlist.appendChild(userDiv);
+    });
+
+    if(redirectUidAndUsername){
+      let [rUid, rUsername] = redirectUidAndUsername.split("|");
+      redirectUidAndUsername = null; 
+      openChat(rUid, rUsername);
+    }
+  };
+  onValue(usersRef, usersListener);
+}
+
 
 function openChat(uid, name) {
   selectedUser = uid;
@@ -250,71 +319,121 @@ function openChat(uid, name) {
 }
 
 
+let renderTimeout, holdTimer;
+
 function loadMessages() {
   const chatRef = ref(db, "chats/" + currentChatId);
+  off(chatRef); 
+
   onValue(chatRef, snapshot => {
-    messagesDiv.innerHTML = "";
-    const data = snapshot.val() || {};
-    
-    // Logic to mark messages as seen when the recipient views them
-    Object.keys(data).forEach(key => {
-      if (data[key].sender !== currentUser.uid && !data[key].seen) {
-        update(ref(db, `chats/${currentChatId}/${key}`), { seen: true });
-      }
-    });
+    // Clear existing timer to prevent double-renders
+    clearTimeout(renderTimeout);
 
-    const msgs = Object.values(data).sort((a, b) => a.time - b.time);
-
-    let lastDate = "";
-    msgs.forEach(msg => {
-      const senderId = msg.sender || "";
-      const isMe = senderId === currentUser.uid;
-      const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
-
-      if (dateStr !== lastDate) {
-        const dateDiv = document.createElement("div");
-        dateDiv.className = "date-separator" + (isMe ? " mine-date-separator" : "");
-        dateDiv.textContent = dateStr;
-        messagesDiv.appendChild(dateDiv);
-        lastDate = dateStr;
-      }
-
-      const div = document.createElement("div");
-      div.className = "message " + (isMe ? "from-me" : "from-other");
+    renderTimeout = setTimeout(() => {
+      const data = snapshot.val() || {};
+      messagesDiv.innerHTML = ""; 
       
-      // Logic for tick status
-      const tickClass = msg.seen ? "status-seen" : "status-sent";
-      const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
+      const msgs = Object.entries(data)
+        .map(([key, val]) => ({ key, ...val }))
+        .sort((a, b) => a.time - b.time);
 
-      div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
-      messagesDiv.appendChild(div);
-    });
+      let lastDate = "";
+      msgs.forEach(msg => {
+        const isMe = msg.sender === currentUser.uid;
+        
+        if (!isMe && !msg.seen) {
+          update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
+        }
 
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
+        if (dateStr !== lastDate) {
+          const dateDiv = document.createElement("div");
+          dateDiv.className = "date-separator" + (isMe ? " mine-date-separator" : "");
+          dateDiv.textContent = dateStr;
+          messagesDiv.appendChild(dateDiv);
+          lastDate = dateStr;
+        }
+
+        const div = document.createElement("div");
+        div.className = "message " + (isMe ? "from-me" : "from-other");
+        const tickClass = msg.seen ? "status-seen" : "status-sent";
+        const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
+
+        div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
+        div.ontouchstart = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
+div.ontouchend = () => clearTimeout(holdTimer);
+div.ontouchmove = () => clearTimeout(holdTimer); // Resets if you scroll!
+div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
+div.onmouseup = () => clearTimeout(holdTimer);
+
+        messagesDiv.appendChild(div);
+      });
+
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }, 50); // 50ms is the "sweet spot" to stop loops 🍬
   });
 }
 
+function handleHold(msgKey) {
+  confirm("Delete this message for everyone? 🗑️", () => {
+    remove(ref(db, `chats/${currentChatId}/${msgKey}`));
+  });
+}
 
-sendBtn.onclick = () => {
+// Add these to your msg.forEach loop inside loadMessages():
+
+
+// sendBtn.onclick = () => {
+//   const text = msgInput.value.trim();
+//   if (!text) return alert("No message to send!");
+//   const chatRef = ref(db, "chats/" + currentChatId);
+//   push(chatRef, {
+//     sender: currentUser.uid,
+//     text,
+//     time: Date.now()
+//   });
+//   msgInput.value = "";
+// };
+
+sendBtn.onclick = async () => {
   const text = msgInput.value.trim();
-  if (!text) return alert("No message to send!");
-  const chatRef = ref(db, "chats/" + currentChatId);
-  push(chatRef, {
+  // Ensure selectedUser is the UID of the person you're chatting with! 🎯
+  if (!text || !selectedUser) return;
+
+  const ts = Date.now();
+  
+  // 1. Send the message
+  await push(ref(db, "chats/" + currentChatId), {
     sender: currentUser.uid,
     text,
-    time: Date.now()
+    time: ts
   });
+
+  // 2. Update your list to move them to top
+  update(ref(db, `users/${currentUser.uid}/contacts/${selectedUser}`), { 
+    lastTs: ts 
+  });
+
+  // 3. Update their list to move you to top and show badge
+  update(ref(db, `users/${selectedUser}/contacts/${currentUser.uid}`), { 
+    lastTs: ts, 
+    unread: true 
+  });
+
   msgInput.value = "";
 };
 
+
 backBtn.onclick = () => {
+  closeChat();
+};
+function closeChat(){
   chatScreen.classList.remove("active");
   topRow.style.opacity = "1";
   topRow.style.pointerEvents = "auto";
   logoutBtn.style.opacity = "1";
   logoutBtn.style.pointerEvents = "auto";
-};
-
+}
 function formatTime(ts) {
   const d = new Date(ts || Date.now());
   let h = d.getHours();
@@ -344,7 +463,6 @@ logoutBtn.onclick = () => {
       .catch(err => alert("Logout error: " + err.message));
   });
 };
-signOut(auth)
 // Toggle password visibility
 function setupToggle(inputId, toggleBtnId) {
   const input = document.getElementById(inputId);
@@ -549,6 +667,11 @@ document.getElementById('changeUsernameSubmit').onclick = async() =>{
   }else{
     let uniqueid = currentUser.uid;
     update(ref(db, "users/" + uniqueid), { username: newUsername })
+    let toChangeSavedId = userIdSaved.find(l=> l.email === currentUser.email)
+    toChangeSavedId.username = newUsername;
+    save();
+    displaySaves();
+    currentUsername = newUsername;
     alert("Username change successful", ()=>{
       document.querySelector('.usernameChange').classList.remove("shown");
   document.querySelector('.overlay').classList.remove("shown");
@@ -570,7 +693,8 @@ function checkLoading(callback) {
 }
 
 checkLoading(() => {
-    closeLoading()
+    closeLoading();
+    changeAuth();
 });
 function notify() {
   onAuthStateChanged(auth, (user) => {
@@ -586,13 +710,17 @@ function notify() {
             const msg = snap.val()[msgId];
 
             if (msg.sender !== user.uid && !localStorage.getItem(`warn_${msgId}`)) {
+              // Inside your notify() onValue listener
+  // Add them to your contacts automatically so they show up!
+  set(ref(db, `users/${user.uid}/contacts/${msg.sender}`), true);
+
               // Fetch sender's name from the users node
               get(ref(db, `users/${msg.sender}`)).then((uSnap) => {
                 const name = uSnap.exists() ? uSnap.val().username : "Someone";
                 // Strip HTML tags if your username field contains them
                 const cleanName = name.replace(/<[^>]*>/g, '');
                 
-                notification(cleanName, msg.text);
+                notification(user.uid, cleanName, msg.text);
                 localStorage.setItem(`warn_${msgId}`, "true");
               });
             }
@@ -602,9 +730,9 @@ function notify() {
     });
   });
 }
-function notification(title, msg){
+function notification(uid, title, msg){
   if(typeof Android !== "undefined"){
-    Android.sendNotify(title, msg);
+    Android.sendNotify(uid, title, msg);
   }
 }
 notify();
@@ -616,4 +744,116 @@ function getRelativeTime(ts) {
   if (mins < 60) return `${mins} minutes ago`;
   if (hrs < 24) return `${hrs} hours ago`;
   return formatTime(ts) + " " + new Date(ts).toLocaleDateString("en-GB");
+}
+async function searchAndAdd(shortId) {
+  const snap = await get(ref(db, "users"));
+  const users = snap.val() || {};
+  const targetUid = Object.keys(users).find(id => id.slice(-6) === shortId);
+
+  if (!targetUid) {
+    return alert("Nobody found with that ID!️");
+  }
+
+  if (targetUid === currentUser.uid) {
+    return alert("You can't add yourself");
+  }
+
+  await set(ref(db, `users/${currentUser.uid}/contacts/${targetUid}`), true);
+  alert("User added to your list!");
+  document.getElementById("searchedUsers").innerHTML = ""; 
+}
+
+document.querySelector('.search').onclick = ()=>{
+  document.querySelector('.searchingArea').classList.add("shown");
+  document.getElementById('search').focus();
+};
+document.addEventListener("DOMContentLoaded",()=>{
+  const dialogConfig = {
+  okButtonText: "OK",
+  cancelButtonText: "Cancel",
+  inputPlaceholder: "",
+  msgTextColor: "#3c3c4399",
+  dialogBackgroundColor: "#fff",
+  buttonTextColor: "#007aff",
+  buttonBackgroundColor: "#fff",
+  buttonHoverBackgroundColor: "#eee",
+  dialogWidth: "300px",
+  dialogBorderRadius: "15px",
+  fontSize: "15px",
+  buttonFontSize: "17px",
+  dialogScale: 1,
+  autoFocusInput: false,
+  autoCapitalizeInput: false,
+  promptInputType: "text",
+  alertTakeCallback: true
+};
+Dialogs.initialize(dialogConfig);
+})
+async function searchUser(query) {
+  const searchContainer = document.getElementById("searchedUsers");
+  searchContainer.innerHTML = "";
+  if (!query.trim()) return;
+
+  const snap = await get(ref(db, "users"));
+  const users = snap.val() || {};
+  const q = query.toLowerCase();
+
+  const matches = Object.keys(users).filter(id => {
+    const isMe = id === currentUser.uid;
+    const shortId = id.slice(-6).toLowerCase();
+    const nameMatch = users[id].username.toLowerCase().startsWith(q);
+    const idMatch = shortId.startsWith(q); // Now ID also supports partial typing!
+    
+    return !isMe && (nameMatch || idMatch);
+  });
+
+  if (matches.length === 0) {
+    searchContainer.innerHTML = "";
+    return;
+  }
+
+  matches.forEach(uid => {
+    const user = users[uid];
+    const div = document.createElement("div");
+    div.className = "searchedUser";
+    const cleanName = user.username.replace(/<[^>]*>/g, '');
+    const shortId = uid.slice(-6);
+    
+    div.innerHTML = `
+      <div class="user-avatar" style="--avatar-bg:${user.avatar}">${cleanName[0]}</div>
+      <div>${cleanName} <span style="font-size:0.7em; opacity:0.6">#${shortId}</span></div>
+    `;
+
+    div.onclick = () => {
+      searchAndAdd(shortId);
+      closeSearch();
+      searchContainer.innerHTML = ""; 
+    };
+    searchContainer.appendChild(div);
+  });
+}
+
+
+
+
+document.getElementById('search').oninput = () => {
+  let q = document.getElementById('search').value.trim();
+  searchUser(q);
+  if(q.length > 0){
+    document.querySelector('.clearIcon').classList.add("shown");
+  }else{
+    document.querySelector('.clearIcon').classList.remove("shown");
+  }
+};
+document.querySelector('.clearIcon').onclick = () => {
+  document.getElementById('search').value = "";
+  document.getElementById("searchedUsers").innerHTML = '';
+}
+document.querySelector('.backIcon').onclick = () => {
+  closeSearch();
+}
+function closeSearch(){
+  document.querySelector('.searchingArea').classList.remove("shown");
+  document.getElementById("searchedUsers").innerHTML = '';
+  document.getElementById('search').value = "";
 }
