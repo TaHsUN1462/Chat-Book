@@ -7,6 +7,7 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
+let hasUpdated = localStorage.getItem("hasUpdated") || "true";
 // let redirectUidAndUsername = "n2q5ClCUkecNgWWZxXmkPTBoi0n1|Tahsun2";
 let redirectUidAndUsername = null;
 const firebaseConfig = {
@@ -735,6 +736,9 @@ function checkLoading(callback) {
 
 checkLoading(() => {
     closeLoading();
+    if(hasUpdated == "true"){
+      alert("UI has been updated", ()=> localStorage.setItem("hasUpdated", "false"));
+    }
     changeAuth();
 });
 function notify() {
@@ -903,4 +907,9 @@ function closeSearch(){
   document.querySelector('.searchingArea').classList.remove("shown");
   document.getElementById("searchedUsers").innerHTML = '';
   document.getElementById('search').value = "";
+}
+function setRedirectUserUid(uid, username){
+  setTimeout(() => {
+    alert(uid, username);
+  }, 2000);
 }
