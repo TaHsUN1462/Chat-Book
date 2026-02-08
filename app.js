@@ -7,10 +7,8 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "080220260447";
+let updateCode = "080220260801";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
-// let redirectUidAndUsername = "n2q5ClCUkecNgWWZxXmkPTBoi0n1|Tahsun2";
-let redirectUidAndUsername = null;
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
   authDomain: "chat-book-2a28a.firebaseapp.com",
@@ -128,6 +126,7 @@ loginBtn.onclick = () => {
 function changeAuth(){
   onAuthStateChanged(auth, user => {
   if (user) {
+    if(typeof Android !== "undefined") Android.setUid(user.uid);
     update(ref(db, "users/" + user.uid), { lastLoginTime: Date.now() });
     currentUser = user;
     get(ref(db, "users/" + user.uid))
