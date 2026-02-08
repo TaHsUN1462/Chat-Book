@@ -325,64 +325,14 @@ function openChat(uid, name) {
 
 let renderTimeout, holdTimer;
 
-// function loadMessages() {
-//   const chatRef = ref(db, "chats/" + currentChatId);
-//   off(chatRef); 
-
-//   onValue(chatRef, snapshot => {
-//     // Clear existing timer to prevent double-renders
-//     clearTimeout(renderTimeout);
-
-//     renderTimeout = setTimeout(() => {
-//       const data = snapshot.val() || {};
-//       messagesDiv.innerHTML = ""; 
-      
-//       const msgs = Object.entries(data)
-//         .map(([key, val]) => ({ key, ...val }))
-//         .sort((a, b) => a.time - b.time);
-
-//       let lastDate = "";
-//       msgs.forEach(msg => {
-//         const isMe = msg.sender === currentUser.uid;
-        
-//         if (!isMe && !msg.seen) {
-//           update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
-//         }
-
-//         const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
-//         if (dateStr !== lastDate) {
-//           const dateDiv = document.createElement("div");
-//           dateDiv.className = "date-separator" + (isMe ? " mine-date-separator" : "");
-//           dateDiv.textContent = dateStr;
-//           messagesDiv.appendChild(dateDiv);
-//           lastDate = dateStr;
-//         }
-
-//         const div = document.createElement("div");
-//         div.className = "message " + (isMe ? "from-me" : "from-other");
-//         const tickClass = msg.seen ? "status-seen" : "status-sent";
-//         const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
-
-//         div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
-//         div.ontouchstart = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
-// div.ontouchend = () => clearTimeout(holdTimer);
-// div.ontouchmove = () => clearTimeout(holdTimer); // Resets if you scroll!
-// div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
-// div.onmouseup = () => clearTimeout(holdTimer);
-
-//         messagesDiv.appendChild(div);
-//       });
-
-//       messagesDiv.scrollTop = messagesDiv.scrollHeight;
-//     }, 50); // 50ms is the "sweet spot" to stop loops 🍬
-//   });
-// }
 function loadMessages() {
   const chatRef = ref(db, "chats/" + currentChatId);
   off(chatRef); 
 
   onValue(chatRef, snapshot => {
+    // Clear existing timer to prevent double-renders
     clearTimeout(renderTimeout);
+
     renderTimeout = setTimeout(() => {
       const data = snapshot.val() || {};
       messagesDiv.innerHTML = ""; 
@@ -391,18 +341,13 @@ function loadMessages() {
         .map(([key, val]) => ({ key, ...val }))
         .sort((a, b) => a.time - b.time);
 
-      // BUMP TO TOP: Update your own contact list with the latest time! 📈
-      if (msgs.length > 0) {
-        const lastMsg = msgs[msgs.length - 1];
-        update(ref(db, `users/${currentUser.uid}/contacts/${selectedUser}`), { 
-          lastTs: lastMsg.time 
-        });
-      }
-
       let lastDate = "";
       msgs.forEach(msg => {
         const isMe = msg.sender === currentUser.uid;
-        if (!isMe && !msg.seen) update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
+        
+        if (!isMe && !msg.seen) {
+          update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
+        }
 
         const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
         if (dateStr !== lastDate) {
@@ -416,17 +361,72 @@ function loadMessages() {
         const div = document.createElement("div");
         div.className = "message " + (isMe ? "from-me" : "from-other");
         const tickClass = msg.seen ? "status-seen" : "status-sent";
-        const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
+        const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
 
         div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
-        div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
-        div.onmouseup = () => clearTimeout(holdTimer);
+        div.ontouchstart = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
+div.ontouchend = () => clearTimeout(holdTimer);
+div.ontouchmove = () => clearTimeout(holdTimer); // Resets if you scroll!
+div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
+div.onmouseup = () => clearTimeout(holdTimer);
+
         messagesDiv.appendChild(div);
       });
+
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }, 50);
+    }, 50); // 50ms is the "sweet spot" to stop loops 🍬
   });
 }
+// function loadMessages() {
+//   const chatRef = ref(db, "chats/" + currentChatId);
+//   off(chatRef); 
+
+//   onValue(chatRef, snapshot => {
+//     clearTimeout(renderTimeout);
+//     renderTimeout = setTimeout(() => {
+//       const data = snapshot.val() || {};
+//       messagesDiv.innerHTML = ""; 
+      
+//       const msgs = Object.entries(data)
+//         .map(([key, val]) => ({ key, ...val }))
+//         .sort((a, b) => a.time - b.time);
+
+//       // BUMP TO TOP: Update your own contact list with the latest time! 📈
+//       if (msgs.length > 0) {
+//         const lastMsg = msgs[msgs.length - 1];
+//         update(ref(db, `users/${currentUser.uid}/contacts/${selectedUser}`), { 
+//           lastTs: lastMsg.time 
+//         });
+//       }
+
+//       let lastDate = "";
+//       msgs.forEach(msg => {
+//         const isMe = msg.sender === currentUser.uid;
+//         if (!isMe && !msg.seen) update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
+
+//         const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
+//         if (dateStr !== lastDate) {
+//           const dateDiv = document.createElement("div");
+//           dateDiv.className = "date-separator" + (isMe ? " mine-date-separator" : "");
+//           dateDiv.textContent = dateStr;
+//           messagesDiv.appendChild(dateDiv);
+//           lastDate = dateStr;
+//         }
+
+//         const div = document.createElement("div");
+//         div.className = "message " + (isMe ? "from-me" : "from-other");
+//         const tickClass = msg.seen ? "status-seen" : "status-sent";
+//         const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
+
+//         div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
+//         div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
+//         div.onmouseup = () => clearTimeout(holdTimer);
+//         messagesDiv.appendChild(div);
+//       });
+//       messagesDiv.scrollTop = messagesDiv.scrollHeight;
+//     }, 50);
+//   });
+// }
 
 
 function handleHold(msgKey) {
@@ -572,7 +572,7 @@ function displaySaves(){
       showLoading("Loading account <b>"+item.username+"<b> ...")
       signInWithEmailAndPassword(auth, item.email, item.pass)
     .then(() => {
-      changeAuth()
+    changeAuth()
       closeLoading()
     })
     .catch(err => {
@@ -753,7 +753,13 @@ function notify() {
             if (msg.sender !== user.uid && !localStorage.getItem(`warn_${msgId}`)) {
               // Inside your notify() onValue listener
   // Add them to your contacts automatically so they show up!
-  set(ref(db, `users/${user.uid}/contacts/${msg.sender}`), true);
+update(ref(db, `users/${user.uid}/contacts/${msg.sender}`), {
+  lastTs: msg.time,
+  // Don't set unread: true here if you want to handle that in the sender logic instead,
+  // but adding it here ensures they see the red dot even if the app was closed!
+  unread: true 
+});
+
 
               // Fetch sender's name from the users node
               get(ref(db, `users/${msg.sender}`)).then((uSnap) => {
