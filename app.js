@@ -7,7 +7,7 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "shqu";
+let updateCode = "080220260447";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 // let redirectUidAndUsername = "n2q5ClCUkecNgWWZxXmkPTBoi0n1|Tahsun2";
 let redirectUidAndUsername = null;
@@ -926,4 +926,8 @@ function setRedirectUserUid(uid, username){
   setTimeout(() => {
     alert(uid, username);
   }, 2000);
+}
+
+if(window.location.includes("file:///")){
+  document.body.classList.add("webview");
 }

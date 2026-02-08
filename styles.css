@@ -43,6 +43,9 @@ body, html {
   overflow: hidden;
   user-select: none;
 }
+body.webview #app{
+  padding-top: 50px;
+}
 #app {
   width: 100%;
   height: 100%;
@@ -536,6 +539,9 @@ button:hover {
   align-items: center;
   display: none;
   font-size: 1.2rem;
+}
+body.webview #menu-btn{
+  top: 50px;
 }
 .menu .close, .usernameChange .close, .passwordChange .close{
   all: unset;
