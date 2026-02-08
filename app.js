@@ -7,7 +7,7 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "080220260801";
+let updateCode = "080220260854";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -126,7 +126,7 @@ loginBtn.onclick = () => {
 function changeAuth(){
   onAuthStateChanged(auth, user => {
   if (user) {
-    if(typeof Android !== "undefined") Android.setUid(user.uid);
+    if(typeof Android !== "undefined") Android.startServer();
     update(ref(db, "users/" + user.uid), { lastLoginTime: Date.now() });
     currentUser = user;
     get(ref(db, "users/" + user.uid))
@@ -489,6 +489,7 @@ logoutBtn.onclick = () => {
     }
     set(ref(db, "users/" + currentUser.uid + "/online"), false)
       .then(() => {
+        if(typeof Android !== "undefined") Android.onLogout();
         signOut(auth)
         displaySaves()
         currentUsername = null;
@@ -784,7 +785,7 @@ update(ref(db, `users/${user.uid}/contacts/${msg.sender}`), {
                 // Strip HTML tags if your username field contains them
                 const cleanName = name.replace(/<[^>]*>/g, '');
                 
-                // notification(user.uid, cleanName, msg.text);
+                notification(cleanName, msg.text);
                 localStorage.setItem(`warn_${msgId}`, "true");
               });
             }
@@ -794,9 +795,9 @@ update(ref(db, `users/${user.uid}/contacts/${msg.sender}`), {
     });
   });
 }
-function notification(uid, title, msg){
+function notification(title, msg){
   if(typeof Android !== "undefined"){
-    Android.sendNotify(uid, title, msg);
+    Android.sendNotify(title, msg);
   }
 }
 notify();
@@ -925,8 +926,4 @@ function setRedirectUserUid(uid, username){
   setTimeout(() => {
     alert(uid, username);
   }, 2000);
-}
-
-if(window.location.includes("file:///")){
-  document.body.classList.add("webview");
 }
