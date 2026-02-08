@@ -7,7 +7,8 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let hasUpdated = localStorage.getItem("hasUpdated") || "true";
+let updateCode = "shqu";
+let hasUpdated = localStorage.getItem(updateCode) || "true";
 // let redirectUidAndUsername = "n2q5ClCUkecNgWWZxXmkPTBoi0n1|Tahsun2";
 let redirectUidAndUsername = null;
 const firebaseConfig = {
@@ -138,6 +139,7 @@ function changeAuth(){
         toChangeSavedId.avatar = currentData.avatar;
         save();
         displaySaves();
+        // closeLoading();
       })
     setUserOnline(user.uid);
     authSection.style.display = "none";
@@ -146,6 +148,7 @@ function changeAuth(){
     signupForm.style.display = "none"
     loginForm.style.display = "flex"
     document.querySelector('#settings-btn').classList.add("needSpace");
+    showLoading("Loading your contacts")
     loadUsers();
     displaySaves();
   } else {
@@ -244,7 +247,6 @@ function loadUsers() {
     const myData = users[currentUser.uid] || {};
     const myContacts = myData.contacts || {};
     userlist.innerHTML = "";
-
     const reg = /<[^>]*>/g;
     document.querySelector('.myavatar').innerHTML = myData.username?.replace(reg, '')[0] || "";
     document.querySelector('.myavatar').style.setProperty("--avatar-bg", myData.avatar);
@@ -260,13 +262,12 @@ function loadUsers() {
       const valB = Number(myContacts[b].lastTs) || 0;
       return valB - valA; 
     });
-    console.log(sortedIds);
     sortedIds.forEach(uid => {
       const user = users[uid];
       if (!user) return;
       const userDiv = document.createElement("div");
       userDiv.className = "user-item";
-      
+
       const badge = myContacts[uid].unread ? `<span class="badge"></span>` : "";
       const avatarChar = user.username.replace(reg, '')[0];
       
@@ -288,12 +289,7 @@ function loadUsers() {
       userDiv.ontouchmove = () => clearTimeout(holdTimer);
       userlist.appendChild(userDiv);
     });
-
-    if(redirectUidAndUsername){
-      let [rUid, rUsername] = redirectUidAndUsername.split("|");
-      redirectUidAndUsername = null; 
-      openChat(rUid, rUsername);
-    }
+    closeLoading();
   };
   onValue(usersRef, usersListener);
 }
@@ -460,7 +456,6 @@ sendBtn.onclick = async () => {
     unread: true 
   });
   
-  console.log(ts);
   msgInput.value = "";
 };
 
@@ -470,6 +465,7 @@ backBtn.onclick = () => {
   closeChat();
 };
 function closeChat(){
+  update(ref(db, `users/${currentUser.uid}/contacts/${selectedUser}`), { unread: false });
   chatScreen.classList.remove("active");
   topRow.style.opacity = "1";
   topRow.style.pointerEvents = "auto";
@@ -737,9 +733,27 @@ function checkLoading(callback) {
 checkLoading(() => {
     closeLoading();
     if(hasUpdated == "true"){
-      alert("UI has been updated", ()=> localStorage.setItem("hasUpdated", "false"));
+      alert("UI has been updated", ()=> localStorage.setItem(updateCode, "false"));
     }
-    changeAuth();
+    if(!navigator.onLine){
+      alert("You are offline", ()=>{
+        document.body.style.display = 'none';
+      })
+      
+    }
+    window.addEventListener("offline",()=>{
+      alert("You are offline", ()=>{
+        document.body.style.display = 'none';
+      })
+      
+    });
+window.addEventListener("online",()=>{
+  alert("You are back online")
+      document.body.style.display = 'block';
+});
+    setTimeout(() => {
+      changeAuth();
+    }, 500);
 });
 function notify() {
   onAuthStateChanged(auth, (user) => {
@@ -771,7 +785,7 @@ update(ref(db, `users/${user.uid}/contacts/${msg.sender}`), {
                 // Strip HTML tags if your username field contains them
                 const cleanName = name.replace(/<[^>]*>/g, '');
                 
-                notification(user.uid, cleanName, msg.text);
+                // notification(user.uid, cleanName, msg.text);
                 localStorage.setItem(`warn_${msgId}`, "true");
               });
             }
