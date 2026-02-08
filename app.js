@@ -7,8 +7,8 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let redirectUidAndUsername = "n2q5ClCUkecNgWWZxXmkPTBoi0n1|Tahsun2";
-// let redirectUidAndUsername = "";
+// let redirectUidAndUsername = "n2q5ClCUkecNgWWZxXmkPTBoi0n1|Tahsun2";
+let redirectUidAndUsername = null;
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
   authDomain: "chat-book-2a28a.firebaseapp.com",
@@ -253,10 +253,13 @@ function loadUsers() {
     myIdDisplay.innerHTML = `Unique ID: ${currentUser.uid.slice(-6)}`;
     myIdDisplay.onclick = () => navigator.clipboard.writeText(`${currentUser.uid.slice(-6)}`);
 
-    const sortedIds = Object.keys(myContacts).sort((a, b) => 
-      (myContacts[b].lastTs || 0) - (myContacts[a].lastTs || 0)
-    );
-
+    // FIX: Compare as Numbers and use B - A for descending order! 📈
+    const sortedIds = Object.keys(myContacts).sort((a, b) => {
+      const valA = Number(myContacts[a].lastTs) || 0;
+      const valB = Number(myContacts[b].lastTs) || 0;
+      return valB - valA; 
+    });
+    console.log(sortedIds);
     sortedIds.forEach(uid => {
       const user = users[uid];
       if (!user) return;
@@ -295,6 +298,7 @@ function loadUsers() {
 }
 
 
+
 function openChat(uid, name) {
   selectedUser = uid;
   currentChatId = [currentUser.uid, uid].sort().join("_");
@@ -321,14 +325,64 @@ function openChat(uid, name) {
 
 let renderTimeout, holdTimer;
 
+// function loadMessages() {
+//   const chatRef = ref(db, "chats/" + currentChatId);
+//   off(chatRef); 
+
+//   onValue(chatRef, snapshot => {
+//     // Clear existing timer to prevent double-renders
+//     clearTimeout(renderTimeout);
+
+//     renderTimeout = setTimeout(() => {
+//       const data = snapshot.val() || {};
+//       messagesDiv.innerHTML = ""; 
+      
+//       const msgs = Object.entries(data)
+//         .map(([key, val]) => ({ key, ...val }))
+//         .sort((a, b) => a.time - b.time);
+
+//       let lastDate = "";
+//       msgs.forEach(msg => {
+//         const isMe = msg.sender === currentUser.uid;
+        
+//         if (!isMe && !msg.seen) {
+//           update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
+//         }
+
+//         const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
+//         if (dateStr !== lastDate) {
+//           const dateDiv = document.createElement("div");
+//           dateDiv.className = "date-separator" + (isMe ? " mine-date-separator" : "");
+//           dateDiv.textContent = dateStr;
+//           messagesDiv.appendChild(dateDiv);
+//           lastDate = dateStr;
+//         }
+
+//         const div = document.createElement("div");
+//         div.className = "message " + (isMe ? "from-me" : "from-other");
+//         const tickClass = msg.seen ? "status-seen" : "status-sent";
+//         const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
+
+//         div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
+//         div.ontouchstart = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
+// div.ontouchend = () => clearTimeout(holdTimer);
+// div.ontouchmove = () => clearTimeout(holdTimer); // Resets if you scroll!
+// div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
+// div.onmouseup = () => clearTimeout(holdTimer);
+
+//         messagesDiv.appendChild(div);
+//       });
+
+//       messagesDiv.scrollTop = messagesDiv.scrollHeight;
+//     }, 50); // 50ms is the "sweet spot" to stop loops 🍬
+//   });
+// }
 function loadMessages() {
   const chatRef = ref(db, "chats/" + currentChatId);
   off(chatRef); 
 
   onValue(chatRef, snapshot => {
-    // Clear existing timer to prevent double-renders
     clearTimeout(renderTimeout);
-
     renderTimeout = setTimeout(() => {
       const data = snapshot.val() || {};
       messagesDiv.innerHTML = ""; 
@@ -337,13 +391,18 @@ function loadMessages() {
         .map(([key, val]) => ({ key, ...val }))
         .sort((a, b) => a.time - b.time);
 
+      // BUMP TO TOP: Update your own contact list with the latest time! 📈
+      if (msgs.length > 0) {
+        const lastMsg = msgs[msgs.length - 1];
+        update(ref(db, `users/${currentUser.uid}/contacts/${selectedUser}`), { 
+          lastTs: lastMsg.time 
+        });
+      }
+
       let lastDate = "";
       msgs.forEach(msg => {
         const isMe = msg.sender === currentUser.uid;
-        
-        if (!isMe && !msg.seen) {
-          update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
-        }
+        if (!isMe && !msg.seen) update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
 
         const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
         if (dateStr !== lastDate) {
@@ -357,22 +416,18 @@ function loadMessages() {
         const div = document.createElement("div");
         div.className = "message " + (isMe ? "from-me" : "from-other");
         const tickClass = msg.seen ? "status-seen" : "status-sent";
-        const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
+        const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
 
         div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
-        div.ontouchstart = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
-div.ontouchend = () => clearTimeout(holdTimer);
-div.ontouchmove = () => clearTimeout(holdTimer); // Resets if you scroll!
-div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
-div.onmouseup = () => clearTimeout(holdTimer);
-
+        div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
+        div.onmouseup = () => clearTimeout(holdTimer);
         messagesDiv.appendChild(div);
       });
-
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }, 50); // 50ms is the "sweet spot" to stop loops 🍬
+    }, 50);
   });
 }
+
 
 function handleHold(msgKey) {
   confirm("Delete this message for everyone? 🗑️", () => {
@@ -380,48 +435,34 @@ function handleHold(msgKey) {
   });
 }
 
-// Add these to your msg.forEach loop inside loadMessages():
-
-
-// sendBtn.onclick = () => {
-//   const text = msgInput.value.trim();
-//   if (!text) return alert("No message to send!");
-//   const chatRef = ref(db, "chats/" + currentChatId);
-//   push(chatRef, {
-//     sender: currentUser.uid,
-//     text,
-//     time: Date.now()
-//   });
-//   msgInput.value = "";
-// };
 
 sendBtn.onclick = async () => {
   const text = msgInput.value.trim();
-  // Ensure selectedUser is the UID of the person you're chatting with! 🎯
   if (!text || !selectedUser) return;
 
   const ts = Date.now();
   
-  // 1. Send the message
-  await push(ref(db, "chats/" + currentChatId), {
+  await push(ref(db, `chats/${currentChatId}`), {
     sender: currentUser.uid,
     text,
     time: ts
   });
 
-  // 2. Update your list to move them to top
+  // Update YOU (lastTs moves them up)
   update(ref(db, `users/${currentUser.uid}/contacts/${selectedUser}`), { 
     lastTs: ts 
   });
 
-  // 3. Update their list to move you to top and show badge
+  // Update THEM (lastTs moves you up + badge)
   update(ref(db, `users/${selectedUser}/contacts/${currentUser.uid}`), { 
     lastTs: ts, 
     unread: true 
   });
-
+  
+  console.log(ts);
   msgInput.value = "";
 };
+
 
 
 backBtn.onclick = () => {
