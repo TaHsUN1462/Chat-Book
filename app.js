@@ -7,7 +7,7 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "080220260854";
+let updateCode = "090220260923";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -126,7 +126,7 @@ loginBtn.onclick = () => {
 function changeAuth(){
   onAuthStateChanged(auth, user => {
   if (user) {
-    if(typeof Android !== "undefined") Android.startServer();
+    if(typeof Android !== "undefined") Android.startServer(user.uid);
     update(ref(db, "users/" + user.uid), { lastLoginTime: Date.now() });
     currentUser = user;
     get(ref(db, "users/" + user.uid))
@@ -785,7 +785,7 @@ update(ref(db, `users/${user.uid}/contacts/${msg.sender}`), {
                 // Strip HTML tags if your username field contains them
                 const cleanName = name.replace(/<[^>]*>/g, '');
                 
-                notification(cleanName, msg.text);
+                // notification(cleanName, msg.text);
                 localStorage.setItem(`warn_${msgId}`, "true");
               });
             }
