@@ -150,13 +150,6 @@
     </div>
   </div>
   <script>
-  function closeChat(){
-  chatScreen.classList.remove("active");
-  topRow.style.opacity = "1";
-  topRow.style.pointerEvents = "auto";
-  logoutBtn.style.opacity = "1";
-  logoutBtn.style.pointerEvents = "auto";
-}
     let mode = localStorage.getItem("theme") || "light";
 function toggleTheme(){
   mode = localStorage.getItem("theme") || "light";
@@ -180,19 +173,6 @@ function toggleSettings(){
 function back(){
   document.querySelector('.settings').classList.remove('shown')
   document.querySelector('.overlay').classList.remove('shown')
-}
-function checkOpens(){
-  let chatShown = document.getElementById('chat-screen').classList.contains("active");
-  let menuShown = document.querySelector('.menu').classList.contains("shown");
-  if(chatShown){
-    closeChat();
-  }else if(menuShown){
-    document.querySelector('.menu').classList.remove("shown");
-  }else{
-    confirm("Do you want to close app?",()=>{
-      CloseInterface.closeApp();
-    });
-  }
 }
   </script>
   <script src="dialogs.js"></script>

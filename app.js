@@ -7,7 +7,7 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "100220260354";
+let updateCode = "10-02-2026-04:07";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -743,7 +743,7 @@ function checkLoading(callback) {
 
 checkLoading(() => {
     if(hasUpdated == "true"){
-      alert("UI has been updated", ()=> localStorage.setItem(updateCode, "false"));
+      alert(`UI has been updated at \n${updateCode}`, ()=> localStorage.setItem(updateCode, "false"));
     }
     if(!navigator.onLine){
       alert("You are offline", ()=>{
@@ -933,3 +933,15 @@ function closeSearch(){
   document.getElementById("searchedUsers").innerHTML = '';
   document.getElementById('search').value = "";
 }
+export function checkOpens(){
+  let chatShown = document.getElementById('chat-screen').classList.contains("active");
+  let menuShown = document.querySelector('.menu').classList.contains("shown");
+  if(chatShown){
+    chatScreen.classList.remove("active");
+  }else if(menuShown){
+    document.querySelector('.menu').classList.remove("shown");
+  }else{
+    CloseInterface.closeApp();
+  }
+}
+window.checkOpens = checkOpens;
