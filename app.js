@@ -933,15 +933,3 @@ function closeSearch(){
   document.getElementById("searchedUsers").innerHTML = '';
   document.getElementById('search').value = "";
 }
-function setRedirectUserUid(uid, username){
-  setTimeout(() => {
-    alert(uid, username);
-  }, 2000);
-}
-
-function checkOpens(){
-  let chatShown = document.getElementById('chat-screen').classList.contains("active");
-  let menuShown = document.querySelector('.menu').classList.contains("shown");
-  if(chatShown) closeChat();
-  if(menuShown) document.querySelector('.menu').classList.remove("shown");
-}

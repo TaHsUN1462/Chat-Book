@@ -181,6 +181,19 @@ function back(){
   document.querySelector('.settings').classList.remove('shown')
   document.querySelector('.overlay').classList.remove('shown')
 }
+function checkOpens(){
+  let chatShown = document.getElementById('chat-screen').classList.contains("active");
+  let menuShown = document.querySelector('.menu').classList.contains("shown");
+  if(chatShown){
+    closeChat();
+  }else if(menuShown){
+    document.querySelector('.menu').classList.remove("shown");
+  }else{
+    confirm("Do you want to close app?",()=>{
+      CloseInterface.closeApp();
+    });
+  }
+}
   </script>
   <script src="dialogs.js"></script>
   <script type="module" src="app.js"></script>
