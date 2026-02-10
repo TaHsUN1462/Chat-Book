@@ -7,7 +7,7 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "100220260259";
+let updateCode = "100220260306";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -942,7 +942,6 @@ function setRedirectUserUid(uid, username){
 function checkOpens(){
   let chatShown = document.getElementById('chat-screen').classList.contains("active");
   let menuShown = document.querySelector('.menu').classList.contains("shown");
-  if(chatShown) return true;
-  if(menuShown) return true;
-  return false;
+  if(chatShown) closeChat();
+  if(menuShown) document.querySelector('.menu').classList.remove("shown");
 }
