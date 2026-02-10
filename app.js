@@ -7,7 +7,7 @@ import {
   onAuthStateChanged, signOut, sendPasswordResetEmail, deleteUser, updatePassword, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "090220260923";
+let updateCode = "100220260154";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
   apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -80,7 +80,8 @@ signupBtn.onclick = () => {
     alert("Fill all signup fields");
     return;
   }
-
+  let hidden = email.replace(/(.{3}).+(@.+)/, "$1.....$2");
+  showLoading("Logging in "+ hidden + " ...");
   createUserWithEmailAndPassword(auth, email, password)
     .then(userCred => {
       const uid = userCred.user.uid;
@@ -101,7 +102,10 @@ signupBtn.onclick = () => {
       changeAuth();
       alert("Signup successful");
     })
-    .catch(err => alert(err.message));
+    .catch(err => {
+      alert(err.message)
+      closeLoading();
+    });
 };
 loginBtn.onclick = () => {
   const email = liEmail.value.trim();
@@ -111,6 +115,8 @@ loginBtn.onclick = () => {
     alert("Fill email and password");
     return;
   }
+let hidden = email.replace(/(.{3}).+(@.+)/, "$1.....$2");
+  showLoading("Logging in "+ hidden + " ...");
 
   signInWithEmailAndPassword(auth, email, password)
     .then(() => {
@@ -121,7 +127,10 @@ loginBtn.onclick = () => {
 
       changeAuth();
     })
-    .catch(err => alert(err.message));
+    .catch(err => {
+      alert(err.message)
+      closeLoading();
+      });
 };
 function changeAuth(){
   onAuthStateChanged(auth, user => {
@@ -164,6 +173,7 @@ function changeAuth(){
     main.style.display = "none";
     menuBtn.style.display = "none";
     userlist.innerHTML = "";
+    closeLoading();
   }
 });
 }
@@ -673,8 +683,9 @@ document.getElementById('delete-account-btn').addEventListener("click", ()=>{
       remove(ref(db, "users/"+currentUser.uid))
       deleteUser(currentUser)
         currentUsername = null;
+        signOut(auth);
         document.querySelector('.menu').classList.remove("shown");
-        alert("Account deleted successfully")
+        alert("Account deleted successfully",()=>window.location.reload());
     })
   })
 });
@@ -731,7 +742,6 @@ function checkLoading(callback) {
 }
 
 checkLoading(() => {
-    closeLoading();
     if(hasUpdated == "true"){
       alert("UI has been updated", ()=> localStorage.setItem(updateCode, "false"));
     }
@@ -751,6 +761,7 @@ window.addEventListener("online",()=>{
   alert("You are back online")
       document.body.style.display = 'block';
 });
+showLoading("Checking login state...")
     setTimeout(() => {
       changeAuth();
     }, 500);
