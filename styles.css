@@ -787,6 +787,10 @@ body.webview #menu-btn{
   height: 100%;
   object-fit: cover;
 }
+video{
+  border: 0.5px solid #000;
+  border-radius: 10px;
+}
 #video-call-screen #decline-video-call{
   z-index: 52;
   position: absolute;
