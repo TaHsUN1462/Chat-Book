@@ -27,7 +27,7 @@ import {
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "12-02-2026-02:40";
+let updateCode = "12-02-2026-05:51";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -943,7 +943,10 @@ function showVideoCallScreen() {
             localVideoScreen.srcObject = stream;
             localVideoScreen.play();
             startCalling();
-        });
+        })
+        .catch(e=>{
+          alert(e);
+        })
 }
 
 function endCallGlobally() {
@@ -1034,7 +1037,12 @@ function showIncomingVideoCall(data) {
 
 async function answerIncomingVideoCall(data) {
     videoCallScreen.classList.add("shown");
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    try {
+  const stream = await navigator.mediaDevices.getUserMedia(constraints);
+  // use stream
+} catch (err) {
+  alert(err)
+}
     
     if (localVideoScreen.srcObject !== stream) {
         localVideoScreen.srcObject = stream;
