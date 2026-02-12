@@ -213,62 +213,6 @@ function removeContact(uid) {
     });
 }
 
-// function loadUsers() {
-//   if (usersRef && usersListener) off(usersRef, "value", usersListener);
-//   usersRef = ref(db, "users");
-//   usersListener = snapshot => {
-//     if (!currentUser) return;
-//     const users = snapshot.val() || {};
-//     const myData = users[currentUser.uid] || {};
-//     const myContacts = myData.contacts || {};
-//     userlist.innerHTML = "";
-
-//     const reg = /<[^>]*>/g;
-//     document.querySelector('.myavatar').innerHTML = myData.username?.replace(reg, '')[0] || "";
-//     document.querySelector('.myavatar').style.setProperty("--avatar-bg", myData.avatar);
-//     document.querySelector('.myname').innerHTML = myData.username;
-//     document.querySelector('.my-id-display').innerHTML = `Unique ID: ${currentUser.uid.slice(-6)}`;
-
-//     // Sort: Latest message (lastTs) goes to the top! 📈
-//     const sortedIds = Object.keys(myContacts).sort((a, b) =>
-//       (myContacts[b].lastTs || 0) - (myContacts[a].lastTs || 0)
-//     );
-
-//     sortedIds.forEach(uid => {
-//       const user = users[uid];
-//       if (!user) return;
-//       const userDiv = document.createElement("div");
-//       userDiv.className = "user-item";
-
-//       const badge = myContacts[uid].unread ? `<span class="badge"></span>` : "";
-//       const avatarChar = user.username.replace(reg, '')[0];
-
-//       userDiv.innerHTML = `
-//         <div class="user-avatar" style="--avatar-bg: ${user.avatar}">${avatarChar}</div>
-//         <div>${user.username} ${badge}</div>
-//         <span class="online-dot ${user.online ? "online" : "offline"}"></span>
-//       `;
-
-//       userDiv.onclick = () => {
-//         if (myContacts[uid].unread) update(ref(db, `users/${currentUser.uid}/contacts/${uid}`), { unread: false });
-//         openChat(uid, user.username);
-//       };
-
-//       userDiv.onmousedown = () => holdTimer = setTimeout(() => removeContact(uid), 1000);
-//       userDiv.onmouseup = () => clearTimeout(holdTimer);
-//       userDiv.ontouchstart = () => holdTimer = setTimeout(() => removeContact(uid), 1000);
-//       userDiv.ontouchend = () => clearTimeout(holdTimer);
-//       userDiv.ontouchmove = () => clearTimeout(holdTimer);
-//       userlist.appendChild(userDiv);
-//     });
-
-//     if(redirectUidAndUsername){
-//       let [rUid, rUsername] = redirectUidAndUsername.split("|");
-//       openChat(rUid, rUsername);
-//     }
-//   };
-//   onValue(usersRef, usersListener);
-// }
 
 function loadUsers() {
     if (usersRef && usersListener) off(usersRef, "value", usersListener);
@@ -428,56 +372,6 @@ function loadMessages() {
         }, 50); // 50ms is the "sweet spot" to stop loops 🍬
     });
 }
-// function loadMessages() {
-//   const chatRef = ref(db, "chats/" + currentChatId);
-//   off(chatRef);
-
-//   onValue(chatRef, snapshot => {
-//     clearTimeout(renderTimeout);
-//     renderTimeout = setTimeout(() => {
-//       const data = snapshot.val() || {};
-//       messagesDiv.innerHTML = "";
-
-//       const msgs = Object.entries(data)
-//         .map(([key, val]) => ({ key, ...val }))
-//         .sort((a, b) => a.time - b.time);
-
-//       // BUMP TO TOP: Update your own contact list with the latest time! 📈
-//       if (msgs.length > 0) {
-//         const lastMsg = msgs[msgs.length - 1];
-//         update(ref(db, `users/${currentUser.uid}/contacts/${selectedUser}`), {
-//           lastTs: lastMsg.time
-//         });
-//       }
-
-//       let lastDate = "";
-//       msgs.forEach(msg => {
-//         const isMe = msg.sender === currentUser.uid;
-//         if (!isMe && !msg.seen) update(ref(db, `chats/${currentChatId}/${msg.key}`), { seen: true });
-
-//         const dateStr = new Date(msg.time).toLocaleDateString("en-GB");
-//         if (dateStr !== lastDate) {
-//           const dateDiv = document.createElement("div");
-//           dateDiv.className = "date-separator" + (isMe ? " mine-date-separator" : "");
-//           dateDiv.textContent = dateStr;
-//           messagesDiv.appendChild(dateDiv);
-//           lastDate = dateStr;
-//         }
-
-//         const div = document.createElement("div");
-//         div.className = "message " + (isMe ? "from-me" : "from-other");
-//         const tickClass = msg.seen ? "status-seen" : "status-sent";
-//         const ticks = isMe ? `<svg class="tick-icon ${tickClass}" viewBox="0 0 48 48" height="1.5em" width="1.5em"><path fill="currentColor" d="M18.9 35.1q-.3 0-.55-.1-.25-.1-.5-.35L8.8 25.6q-.45-.45-.45-1.1 0-.65.45-1.1.45-.45 1.05-.45.6 0 1.05.45l8 8 18.15-18.15q.45-.45 1.075-.45t1.075.45q.45.45.45 1.075T39.2 15.4L19.95 34.65q-.25.25-.5.35-.25.1-.55.1Z"/></svg>` : "";
-
-//         div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(msg.time)}${ticks}</div>`;
-//         div.onmousedown = () => holdTimer = setTimeout(() => handleHold(msg.key), 1000);
-//         div.onmouseup = () => clearTimeout(holdTimer);
-//         messagesDiv.appendChild(div);
-//       });
-//       messagesDiv.scrollTop = messagesDiv.scrollHeight;
-//     }, 50);
-//   });
-// }
 
 function handleHold(msgKey) {
     confirm("Delete this message for everyone? 🗑️", () => {
@@ -1016,7 +910,6 @@ export function checkOpens() {
 }
 window.checkOpens = checkOpens;
 
-
 const videoCallBtn = document.getElementById('video-call-btn');
 const declineVideoCallBtn = document.getElementById('decline-video-call');
 const videoCallScreen = document.getElementById('video-call-screen');
@@ -1034,6 +927,7 @@ function showVideoCallScreen() {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         .then(stream => {
             localVideoScreen.srcObject = stream;
+            localVideoScreen.play();
             startCalling();
         });
 }
@@ -1043,18 +937,29 @@ function endCallGlobally() {
     remove(ref(db, `calls/${currentUser.uid}`));
     videoCallScreen.classList.remove("shown");
     if (localVideoScreen.srcObject) localVideoScreen.srcObject.getTracks().forEach(t => t.stop());
-    if (peerConnection) peerConnection.close();
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
 }
 
 async function startCalling() {
     peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     const stream = localVideoScreen.srcObject;
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-    peerConnection.ontrack = (e) => remoteVideoScreen.srcObject = e.streams[0];
+    
+    peerConnection.ontrack = (e) => {
+        remoteVideoScreen.srcObject = e.streams[0];
+        remoteVideoScreen.play();
+    };
 
     peerConnection.onicecandidate = (e) => {
         if (e.candidate) push(ref(db, `calls/${selectedUser}/callerCandidates`), e.candidate.toJSON());
     };
+
+    onChildAdded(ref(db, `calls/${selectedUser}/receiverCandidates`), (snap) => {
+        if (snap.exists()) peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
+    });
 
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
@@ -1067,10 +972,6 @@ async function startCalling() {
         if (data.answer && peerConnection.signalingState !== "stable") {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.answer)));
         }
-    });
-
-    onChildAdded(ref(db, `calls/${selectedUser}/receiverCandidates`), (snap) => {
-        peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
     });
 }
 
@@ -1104,27 +1005,30 @@ function showIncomingVideoCall(data) {
 
 async function answerIncomingVideoCall(data) {
     videoCallScreen.classList.add("shown");
+    localVideoScreen.srcObject = "";
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    
     localVideoScreen.srcObject = stream;
     localVideoScreen.play();
     
     peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-    
+
     peerConnection.ontrack = (e) => {
         remoteVideoScreen.srcObject = e.streams[0];
         remoteVideoScreen.play();
     };
 
-    // ... ICE candidate logic ...
+    peerConnection.onicecandidate = (e) => {
+        if (e.candidate) push(ref(db, `calls/${currentUser.uid}/receiverCandidates`), e.candidate.toJSON());
+    };
+
+    onChildAdded(ref(db, `calls/${currentUser.uid}/callerCandidates`), (snap) => {
+        if (snap.exists()) peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
+    });
 
     await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.offer)));
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
-    await set(ref(db, `calls/${currentUser.uid}`), { 
-        ...data, 
-        answer: JSON.stringify(answer) 
-    });
+    set(ref(db, `calls/${currentUser.uid}`), { ...data, answer: JSON.stringify(answer) });
 }
