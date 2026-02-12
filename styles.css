@@ -206,6 +206,8 @@ button:hover {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
+  padding-left: 50px;
   white-space: nowrap;
 }
 #messages {
@@ -741,4 +743,126 @@ body.webview #menu-btn{
   border-radius: 50%;
   left: 17px;
   top: 17px;
+}
+.chat-more{
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.chat-more button{
+  all: unset;
+  font-size: 1.1rem;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: none;
+  color: var(--text-primary);
+}
+.chat-more button:hover{
+  color: var(--secondary);
+}
+#video-call-screen{
+  position: fixed;
+  left: -100%;
+  pointer-events: none;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  background: var(--primary);
+  width: 100vw;
+  height: 100vh;
+  z-index: 51;
+}
+#video-call-screen.shown{
+  left: 0;
+  pointer-events: auto;
+}
+#video-call-screen #remote-video-screen{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#video-call-screen #decline-video-call{
+  z-index: 52;
+  position: absolute;
+  left: 50%;
+  bottom: 100px;
+  background: var(--offline);
+  color: white;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translateX(-50%);
+}
+#video-call-screen #local-video-screen{
+  width: 200px;
+  aspect-ratio: 9/16;
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  object-fit: cover;
+}
+.incomingVideoCallUI{
+  position: fixed;
+  left: -100%;
+  pointer-events: none;
+  width: 100vw;
+  bottom: 0;
+  right: 0;
+  top: 0;
+  padding: 10px;
+  padding-top: 100px;
+  background: var(--primary);
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  flex-direction: column;
+  gap: 30px;
+}
+.incomingVideoCallUI.shown{
+  left: 0;
+  pointer-events: auto;
+}
+.videoCallerAvatar{
+  font-size: 2.5rem;
+  min-width: 200px;
+  min-height: 200px;
+  background: red;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.videoCallBtns{
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+.videoCallBtns button{
+  all: unset;
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100px;
+  height: 100px;
+  background: var(--secondary);
+  border-radius: 50%;
+  color: white;
+}
+#video-decline-btn{
+  background: var(--offline);
 }
