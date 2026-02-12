@@ -27,7 +27,7 @@ import {
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "12-02-2026-02:23";
+let updateCode = "12-02-2026-02:40";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -912,6 +912,18 @@ export function checkOpens() {
 window.checkOpens = checkOpens;
 
 // video calling
+const constraints = {
+    audio: { 
+        echoCancellation: true, 
+        noiseSuppression: true, 
+        autoGainControl: true 
+    },
+    video: { 
+        width: { ideal: 640 }, // Lower resolution helps audio priority
+        frameRate: { max: 24 } // Cap FPS to save bandwidth
+    }
+};
+
 const videoCallBtn = document.getElementById('video-call-btn');
 const declineVideoCallBtn = document.getElementById('decline-video-call');
 const videoCallScreen = document.getElementById('video-call-screen');
@@ -926,7 +938,7 @@ declineVideoCallBtn.onclick = () => endCallGlobally();
 function showVideoCallScreen() {
     if (typeof closeChat === 'function') closeChat();
     videoCallScreen.classList.add("shown");
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
             localVideoScreen.srcObject = stream;
             localVideoScreen.play();
@@ -1022,7 +1034,7 @@ function showIncomingVideoCall(data) {
 
 async function answerIncomingVideoCall(data) {
     videoCallScreen.classList.add("shown");
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     
     if (localVideoScreen.srcObject !== stream) {
         localVideoScreen.srcObject = stream;
