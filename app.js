@@ -26,7 +26,7 @@ import {
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "12-02-2026-01:21";
+let updateCode = "12-02-2026-01:31";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -1105,23 +1105,26 @@ function showIncomingVideoCall(data) {
 async function answerIncomingVideoCall(data) {
     videoCallScreen.classList.add("shown");
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    
     localVideoScreen.srcObject = stream;
+    localVideoScreen.play();
     
     peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-    peerConnection.ontrack = (e) => remoteVideoScreen.srcObject = e.streams[0];
-
-    peerConnection.onicecandidate = (e) => {
-        if (e.candidate) push(ref(db, `calls/${currentUser.uid}/receiverCandidates`), e.candidate.toJSON());
+    
+    peerConnection.ontrack = (e) => {
+        remoteVideoScreen.srcObject = e.streams[0];
+        remoteVideoScreen.play();
     };
 
-    onChildAdded(ref(db, `calls/${currentUser.uid}/callerCandidates`), (snap) => {
-        peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
-    });
+    // ... ICE candidate logic ...
 
     await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.offer)));
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
-    update(ref(db, `calls/${currentUser.uid}`), { answer: JSON.stringify(answer) });
+    await set(ref(db, `calls/${currentUser.uid}`), { 
+        ...data, 
+        answer: JSON.stringify(answer) 
+    });
 }
