@@ -26,7 +26,7 @@ import {
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "10-02-2026-04:13";
+let updateCode = "12-02-2026-01:21";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -1019,139 +1019,109 @@ window.checkOpens = checkOpens;
 
 const videoCallBtn = document.getElementById('video-call-btn');
 const declineVideoCallBtn = document.getElementById('decline-video-call');
-videoCallBtn.onclick = () => {
-  showVideoCallScreen();
-}
-declineVideoCallBtn.onclick = () => {
-  declineVideoCall();
-}
 const videoCallScreen = document.getElementById('video-call-screen');
 const localVideoScreen = document.getElementById('local-video-screen');
 const remoteVideoScreen = document.getElementById('remote-video-screen');
 
+let peerConnection;
 
-function showVideoCallScreen(){
-  closeChat();
-  videoCallScreen.classList.add("shown");
-  navigator.mediaDevices.getUserMedia({video: true, audio: true})
-  .then(stream=>{
-    localVideoScreen.srcObject = stream;
-    startCalling();
-  })
+videoCallBtn.onclick = () => showVideoCallScreen();
+declineVideoCallBtn.onclick = () => endCallGlobally();
+
+function showVideoCallScreen() {
+    closeChat();
+    videoCallScreen.classList.add("shown");
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+            localVideoScreen.srcObject = stream;
+            startCalling();
+        });
 }
-let peerConnection; 
+
+function endCallGlobally() {
+    remove(ref(db, `calls/${selectedUser}`));
+    remove(ref(db, `calls/${currentUser.uid}`));
+    videoCallScreen.classList.remove("shown");
+    if (localVideoScreen.srcObject) localVideoScreen.srcObject.getTracks().forEach(t => t.stop());
+    if (peerConnection) peerConnection.close();
+}
 
 async function startCalling() {
-    peerConnection = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-
+    peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     const stream = localVideoScreen.srcObject;
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-
     peerConnection.ontrack = (e) => remoteVideoScreen.srcObject = e.streams[0];
+
+    peerConnection.onicecandidate = (e) => {
+        if (e.candidate) push(ref(db, `calls/${selectedUser}/callerCandidates`), e.candidate.toJSON());
+    };
 
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    // Send to Firebase
-    set(ref(db, `calls/${selectedUser}`), {
-        offer: JSON.stringify(offer),
-        from: currentUser.uid // Use your current user ID
-    });
-    onValue(ref(db, `calls/${selectedUser}`), async (snapshot) => {
-    const data = snapshot.val();
-    
-    // 1. If the recipient declines or hangs up
-    if (!data) {
-        videoCallScreen.classList.remove("shown");
-        if(localVideoScreen.srcObject) {
-            localVideoScreen.srcObject.getTracks().forEach(t => t.stop());
-        }
-        return;
-    }
+    set(ref(db, `calls/${selectedUser}`), { offer: JSON.stringify(offer), from: currentUser.uid });
 
-    // 2. If the recipient answers the call
-    if (data.answer && peerConnection.signalingState !== "stable") {
-        const answer = new RTCSessionDescription(JSON.parse(data.answer));
-        await peerConnection.setRemoteDescription(answer);
-    }
-});
+    onValue(ref(db, `calls/${selectedUser}`), async (snap) => {
+        const data = snap.val();
+        if (!data) return endCallGlobally();
+        if (data.answer && peerConnection.signalingState !== "stable") {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.answer)));
+        }
+    });
+
+    onChildAdded(ref(db, `calls/${selectedUser}/receiverCandidates`), (snap) => {
+        peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
+    });
 }
-function declineVideoCall() {
-    // Remove from the person you were trying to call
-    remove(ref(db, `calls/${selectedUser}`)); 
-    videoCallScreen.classList.remove("shown");
-    localVideoScreen.srcObject.getTracks().forEach(t => t.stop());
+
+function addVideoCallListener() {
+    onValue(ref(db, `calls/${currentUser.uid}`), (snap) => {
+        const data = snap.val();
+        if (data && data.offer && !data.answer) showIncomingVideoCall(data);
+        if (!data && videoCallScreen.classList.contains("shown")) endCallGlobally();
+    });
 }
-// Listener for incoming calls
-function addVideoCallListener(){
-  onValue(ref(db, `calls/${currentUser.uid}`), (snapshot) => {
-    const data = snapshot.val();
-    if (data && data.offer && !data.answer) {
-        showIncomingVideoCall(data);
-    }
-});
-}
+
 function showIncomingVideoCall(data) {
-    // Save who is calling so you know who to answer
-    selectedUser = data.from; 
-    
+    selectedUser = data.from;
     document.querySelector('.incomingVideoCallUI').classList.add("shown");
-    get(ref(db, `/users/${selectedUser}`))
-      .then(snap=>{
-        let tempData = snap.val();
-        document.getElementById('videoCallerName').innerHTML = tempData.username;
-        let reg = new RegExp("<[^>]*>", "g");
-        let usernameAvatar = tempData.username.replace(reg, "")[0];
-        document.getElementById('videoCallerAvatar').innerHTML = usernameAvatar;
-        document.getElementById('videoCallerAvatar').style.background = tempData.avatar;
-      })
-    // Set up the click listeners
+    get(ref(db, `/users/${selectedUser}`)).then(snap => {
+        let u = snap.val();
+        document.getElementById('videoCallerName').innerHTML = u.username;
+        document.getElementById('videoCallerAvatar').innerHTML = u.username[0];
+        document.getElementById('videoCallerAvatar').style.background = u.avatar;
+    });
+
     document.getElementById('video-answer-btn').onclick = () => {
         document.querySelector('.incomingVideoCallUI').classList.remove("shown");
         answerIncomingVideoCall(data);
     };
-    
     document.getElementById('video-decline-btn').onclick = () => {
         document.querySelector('.incomingVideoCallUI').classList.remove("shown");
-        declineIncomingVideoCall();
+        endCallGlobally();
     };
 }
 
-function declineIncomingVideoCall() {
-    remove(ref(db, `calls/${auth.currentUser.uid}`));
-}
 async function answerIncomingVideoCall(data) {
-    // You MUST get the stream before calling answerCall!
-    videoCallScreen.classList.add("shown"); // Show the screen!
-    const stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+    videoCallScreen.classList.add("shown");
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideoScreen.srcObject = stream;
-    answerCall(data); 
-}
-
-async function answerCall(data) {
-    peerConnection = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-
-    // Send your tracks back
-    const stream = localVideoScreen.srcObject;
+    
+    peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-
-    // Receive their tracks
     peerConnection.ontrack = (e) => remoteVideoScreen.srcObject = e.streams[0];
 
-    // Set the caller's offer
-    const offer = new RTCSessionDescription(JSON.parse(data.offer));
-    await peerConnection.setRemoteDescription(offer);
+    peerConnection.onicecandidate = (e) => {
+        if (e.candidate) push(ref(db, `calls/${currentUser.uid}/receiverCandidates`), e.candidate.toJSON());
+    };
 
-    // Create and set your answer
+    onChildAdded(ref(db, `calls/${currentUser.uid}/callerCandidates`), (snap) => {
+        peerConnection.addIceCandidate(new RTCIceCandidate(snap.val()));
+    });
+
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.offer)));
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
-    // Send answer to Firebase
-    update(ref(db, `calls/${currentUser.uid}`), {
-        answer: JSON.stringify(answer)
-    });
+    update(ref(db, `calls/${currentUser.uid}`), { answer: JSON.stringify(answer) });
 }
