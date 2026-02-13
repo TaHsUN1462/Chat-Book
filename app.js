@@ -26,10 +26,10 @@ import {
     EmailAuthProvider,
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-let ringtone = new Audio("ringtone.mp3")
+let ringtone = new Audio("ringtone.mp3");
 ringtone.loop = true;
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "13-02-2026-03:01";
+let updateCode = "13-02-2026-08:18";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -185,7 +185,7 @@ function changeAuth() {
             displaySaves();
             addVideoCallListener();
         } else {
-            (currentUser = null), (currentUsername = null);
+            ((currentUser = null), (currentUsername = null));
             document
                 .querySelector("#settings-btn")
                 .classList.remove("needSpace");
@@ -206,6 +206,12 @@ function changeAuth() {
 }
 function setUserOnline(uid) {
     const userStatusRef = ref(db, "users/" + uid + "/online");
+    onValue(userStatusRef, snap => {
+        if (!snap.exists()) return;
+        if (snap.val() === false) {
+            endCallGlobally();
+        }
+    });
     set(userStatusRef, true);
     onDisconnect(userStatusRef).set(false);
 }
@@ -215,7 +221,6 @@ function removeContact(uid) {
         remove(ref(db, `users/${currentUser.uid}/contacts/${uid}`));
     });
 }
-
 
 function loadUsers() {
     if (usersRef && usersListener) off(usersRef, "value", usersListener);
@@ -915,22 +920,22 @@ window.checkOpens = checkOpens;
 
 // video calling
 const constraints = {
-    audio: { 
-        echoCancellation: true, 
-        noiseSuppression: true, 
-        autoGainControl: true 
+    audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
     },
-    video: { 
+    video: {
         width: { ideal: 640 }, // Lower resolution helps audio priority
         frameRate: { max: 24 } // Cap FPS to save bandwidth
     }
 };
 
-const videoCallBtn = document.getElementById('video-call-btn');
-const declineVideoCallBtn = document.getElementById('decline-video-call');
-const videoCallScreen = document.getElementById('video-call-screen');
-const localVideoScreen = document.getElementById('local-video-screen');
-const remoteVideoScreen = document.getElementById('remote-video-screen');
+const videoCallBtn = document.getElementById("video-call-btn");
+const declineVideoCallBtn = document.getElementById("decline-video-call");
+const videoCallScreen = document.getElementById("video-call-screen");
+const localVideoScreen = document.getElementById("local-video-screen");
+const remoteVideoScreen = document.getElementById("remote-video-screen");
 
 let peerConnection;
 
@@ -939,21 +944,23 @@ declineVideoCallBtn.onclick = () => endCallGlobally();
 
 function showVideoCallScreen() {
     videoCallScreen.classList.add("shown");
-    navigator.mediaDevices.getUserMedia(constraints)
+    navigator.mediaDevices
+        .getUserMedia(constraints)
         .then(stream => {
             localVideoScreen.srcObject = stream;
             startCalling();
         })
-        .catch(e=>{
-          alert(e);
-        })
+        .catch(e => {
+            alert(e);
+        });
 }
 
 function endCallGlobally() {
     if (selectedUser) remove(ref(db, `calls/${selectedUser}`));
     if (currentUser) remove(ref(db, `calls/${currentUser.uid}`));
     videoCallScreen.classList.remove("shown");
-    if (localVideoScreen.srcObject) localVideoScreen.srcObject.getTracks().forEach(t => t.stop());
+    if (localVideoScreen.srcObject)
+        localVideoScreen.srcObject.getTracks().forEach(t => t.stop());
     if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
@@ -962,23 +969,29 @@ function endCallGlobally() {
 }
 
 async function startCalling() {
-    peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    peerConnection = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
     peerConnection.candQueue = []; // Queue for race conditions
 
     const stream = localVideoScreen.srcObject;
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-    
-    peerConnection.ontrack = (e) => {
+
+    peerConnection.ontrack = e => {
         localVideoScreen.classList.add("small");
         remoteVideoScreen.srcObject = e.streams[0];
     };
 
-    peerConnection.onicecandidate = (e) => {
-        if (e.candidate) push(ref(db, `calls/${selectedUser}/callerCandidates`), e.candidate.toJSON());
+    peerConnection.onicecandidate = e => {
+        if (e.candidate)
+            push(
+                ref(db, `calls/${selectedUser}/callerCandidates`),
+                e.candidate.toJSON()
+            );
     };
 
     // FIX: Queue candidates if Answer hasn't arrived yet!
-    onChildAdded(ref(db, `calls/${selectedUser}/receiverCandidates`), (snap) => {
+    onChildAdded(ref(db, `calls/${selectedUser}/receiverCandidates`), snap => {
         if (!snap.exists()) return;
         const cand = new RTCIceCandidate(snap.val());
         if (peerConnection.remoteDescription) {
@@ -991,84 +1004,101 @@ async function startCalling() {
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    await set(ref(db, `calls/${selectedUser}`), { 
-        offer: JSON.stringify(offer), 
-        from: currentUser.uid 
+    await set(ref(db, `calls/${selectedUser}`), {
+        offer: JSON.stringify(offer),
+        from: currentUser.uid
     });
 
-    onValue(ref(db, `calls/${selectedUser}`), async (snap) => {
+    onValue(ref(db, `calls/${selectedUser}`), async snap => {
         const data = snap.val();
         if (!data) return endCallGlobally();
         if (data.answer && peerConnection.signalingState !== "stable") {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.answer)));
+            await peerConnection.setRemoteDescription(
+                new RTCSessionDescription(JSON.parse(data.answer))
+            );
             // Flush queued candidates
-            peerConnection.candQueue.forEach(c => peerConnection.addIceCandidate(c));
+            peerConnection.candQueue.forEach(c =>
+                peerConnection.addIceCandidate(c)
+            );
             peerConnection.candQueue = [];
         }
     });
 }
 
 function addVideoCallListener() {
-    onValue(ref(db, `calls/${currentUser.uid}`), (snap) => {
+    onValue(ref(db, `calls/${currentUser.uid}`), snap => {
         const data = snap.val();
-        if (data && data.offer && !data.answer){ showIncomingVideoCall(data);
-        }else{
-          hideIncomingVideoCall();
+        if (data && data.offer && !data.answer) {
+            showIncomingVideoCall(data);
+        } else {
+            hideIncomingVideoCall();
         }
-        if (!data && videoCallScreen.classList.contains("shown")) endCallGlobally();
+        if (!data && videoCallScreen.classList.contains("shown"))
+            endCallGlobally();
     });
 }
 
 function showIncomingVideoCall(data) {
     selectedUser = data.from;
     ringtone.currentTime = 0;
-    ringtone.play();
-    document.querySelector('.incomingVideoCallUI').classList.add("shown");
+    // ringtone.play();
+    document.querySelector(".incomingVideoCallUI").classList.add("shown");
     get(ref(db, `/users/${selectedUser}`)).then(snap => {
         let u = snap.val();
-        document.getElementById('videoCallerName').innerHTML = u.username;
-        document.getElementById('videoCallerAvatar').innerHTML = u.username[0];
-        document.getElementById('videoCallerAvatar').style.background = u.avatar;
+        document.getElementById("videoCallerName").innerHTML = u.username;
+        document.getElementById("videoCallerAvatar").innerHTML = u.username[0];
+        document.getElementById("videoCallerAvatar").style.background =
+            u.avatar;
     });
 
-    document.getElementById('video-answer-btn').onclick = () => {
-        document.querySelector('.incomingVideoCallUI').classList.remove("shown");
+    document.getElementById("video-answer-btn").onclick = () => {
+        document
+            .querySelector(".incomingVideoCallUI")
+            .classList.remove("shown");
         answerIncomingVideoCall(data);
     };
-    document.getElementById('video-decline-btn').onclick = () => {
-        document.querySelector('.incomingVideoCallUI').classList.remove("shown");
+    document.getElementById("video-decline-btn").onclick = () => {
+        document
+            .querySelector(".incomingVideoCallUI")
+            .classList.remove("shown");
         endCallGlobally();
     };
 }
-function hideIncomingVideoCall(){
-  document.querySelector('.incomingVideoCallUI').classList.remove("shown");
-  ringtone.pause();
+function hideIncomingVideoCall() {
+    document.querySelector(".incomingVideoCallUI").classList.remove("shown");
+    ringtone.pause();
 }
 
 async function answerIncomingVideoCall(data) {
     videoCallScreen.classList.add("shown");
-  const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
     if (localVideoScreen.srcObject !== stream) {
         localVideoScreen.srcObject = stream;
         localVideoScreen.play().catch(e => console.log("Play interrupted"));
     }
-    
-    peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-    peerConnection.candQueue = []; 
+
+    peerConnection = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+    peerConnection.candQueue = [];
 
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
-    peerConnection.ontrack = (e) => {
-        localVideoScreen.classList.add("small")
+    peerConnection.ontrack = e => {
+        localVideoScreen.classList.add("small");
         remoteVideoScreen.srcObject = e.streams[0];
     };
 
-    peerConnection.onicecandidate = (e) => {
-        if (e.candidate) push(ref(db, `calls/${currentUser.uid}/receiverCandidates`), e.candidate.toJSON());
+    peerConnection.onicecandidate = e => {
+        if (e.candidate)
+            push(
+                ref(db, `calls/${currentUser.uid}/receiverCandidates`),
+                e.candidate.toJSON()
+            );
     };
 
-    onChildAdded(ref(db, `calls/${currentUser.uid}/callerCandidates`), (snap) => {
+    onChildAdded(ref(db, `calls/${currentUser.uid}/callerCandidates`), snap => {
         if (!snap.exists()) return;
         const cand = new RTCIceCandidate(snap.val());
         if (peerConnection.remoteDescription) {
@@ -1078,17 +1108,21 @@ async function answerIncomingVideoCall(data) {
         }
     });
 
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(data.offer)));
-    
+    await peerConnection.setRemoteDescription(
+        new RTCSessionDescription(JSON.parse(data.offer))
+    );
+
     // Flush queued candidates
-    peerConnection.candQueue.forEach(cand => peerConnection.addIceCandidate(cand));
+    peerConnection.candQueue.forEach(cand =>
+        peerConnection.addIceCandidate(cand)
+    );
     peerConnection.candQueue = [];
 
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
-    await set(ref(db, `calls/${currentUser.uid}`), { 
-        ...data, 
-        answer: JSON.stringify(answer) 
+    await set(ref(db, `calls/${currentUser.uid}`), {
+        ...data,
+        answer: JSON.stringify(answer)
     });
 }
