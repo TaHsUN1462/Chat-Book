@@ -29,7 +29,7 @@ import {
 let ringtone = new Audio("ringtone.mp3")
 ringtone.loop = true;
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "12-02-2026-05:51";
+let updateCode = "13-02-2026-02:57";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
