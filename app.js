@@ -29,7 +29,7 @@ import {
 let ringtone = new Audio("ringtone.mp3")
 ringtone.loop = true;
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "13-02-2026-02:57";
+let updateCode = "13-02-2026-03:01";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -958,7 +958,6 @@ function endCallGlobally() {
         peerConnection.close();
         peerConnection = null;
     }
-    ringtone.pause();
     localVideoScreen.classList.remove("small");
 }
 
@@ -1022,6 +1021,7 @@ function addVideoCallListener() {
 
 function showIncomingVideoCall(data) {
     selectedUser = data.from;
+    ringtone.currentTime = 0;
     ringtone.play();
     document.querySelector('.incomingVideoCallUI').classList.add("shown");
     get(ref(db, `/users/${selectedUser}`)).then(snap => {
@@ -1042,6 +1042,7 @@ function showIncomingVideoCall(data) {
 }
 function hideIncomingVideoCall(){
   document.querySelector('.incomingVideoCallUI').classList.remove("shown");
+  ringtone.pause();
 }
 
 async function answerIncomingVideoCall(data) {
