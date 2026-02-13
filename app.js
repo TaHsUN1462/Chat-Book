@@ -26,6 +26,8 @@ import {
     EmailAuthProvider,
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+let ringtone = new Audio("ringtone.mp3")
+ringtone.loop = true;
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
 let updateCode = "12-02-2026-05:51";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
@@ -936,12 +938,10 @@ videoCallBtn.onclick = () => showVideoCallScreen();
 declineVideoCallBtn.onclick = () => endCallGlobally();
 
 function showVideoCallScreen() {
-    if (typeof closeChat === 'function') closeChat();
     videoCallScreen.classList.add("shown");
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => {
             localVideoScreen.srcObject = stream;
-            localVideoScreen.play();
             startCalling();
         })
         .catch(e=>{
@@ -958,6 +958,8 @@ function endCallGlobally() {
         peerConnection.close();
         peerConnection = null;
     }
+    ringtone.pause();
+    localVideoScreen.classList.remove("small");
 }
 
 async function startCalling() {
@@ -968,8 +970,8 @@ async function startCalling() {
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
     
     peerConnection.ontrack = (e) => {
+        localVideoScreen.classList.add("small");
         remoteVideoScreen.srcObject = e.streams[0];
-        remoteVideoScreen.play();
     };
 
     peerConnection.onicecandidate = (e) => {
@@ -1010,13 +1012,17 @@ async function startCalling() {
 function addVideoCallListener() {
     onValue(ref(db, `calls/${currentUser.uid}`), (snap) => {
         const data = snap.val();
-        if (data && data.offer && !data.answer) showIncomingVideoCall(data);
+        if (data && data.offer && !data.answer){ showIncomingVideoCall(data);
+        }else{
+          hideIncomingVideoCall();
+        }
         if (!data && videoCallScreen.classList.contains("shown")) endCallGlobally();
     });
 }
 
 function showIncomingVideoCall(data) {
     selectedUser = data.from;
+    ringtone.play();
     document.querySelector('.incomingVideoCallUI').classList.add("shown");
     get(ref(db, `/users/${selectedUser}`)).then(snap => {
         let u = snap.val();
@@ -1034,15 +1040,13 @@ function showIncomingVideoCall(data) {
         endCallGlobally();
     };
 }
+function hideIncomingVideoCall(){
+  document.querySelector('.incomingVideoCallUI').classList.remove("shown");
+}
 
 async function answerIncomingVideoCall(data) {
     videoCallScreen.classList.add("shown");
-    try {
   const stream = await navigator.mediaDevices.getUserMedia(constraints);
-  // use stream
-} catch (err) {
-  alert(err)
-}
     
     if (localVideoScreen.srcObject !== stream) {
         localVideoScreen.srcObject = stream;
@@ -1055,8 +1059,8 @@ async function answerIncomingVideoCall(data) {
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
     peerConnection.ontrack = (e) => {
+        localVideoScreen.classList.add("small")
         remoteVideoScreen.srcObject = e.streams[0];
-        remoteVideoScreen.play();
     };
 
     peerConnection.onicecandidate = (e) => {
