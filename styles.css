@@ -44,8 +44,8 @@ body, html {
   overflow-y: auto;
   user-select: none;
 }
-body.webview #app{
-  padding-top: 50px;
+body #app{
+  padding-top: 40px;
 }
 #app {
   width: 100%;
