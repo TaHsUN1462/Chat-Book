@@ -44,9 +44,6 @@ body, html {
   overflow-y: auto;
   user-select: none;
 }
-body #app{
-  padding-top: 40px;
-}
 #app {
   width: 100%;
   height: 100%;
@@ -168,7 +165,8 @@ button:hover {
 #chat-screen {
   position: absolute;
   top: -50px; left: 0; right: 0; bottom: 0;
-  background: var(--primary);
+  /* background: var(--primary); */
+  background-image: url(chat-screen.jpeg);
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
@@ -182,6 +180,9 @@ button:hover {
   pointer-events: auto;
   opacity: 1;
 }
+.dark #chat-screen{
+    background-image: url(chat-screen-dark.jpeg);
+}
 #chat-header {
   position: relative;
   display: flex;
@@ -189,26 +190,40 @@ button:hover {
   justify-content: center;
   height: 50px;
   text-align: center;
+  background: var(--primary);
 }
 #back-btn {
   position: absolute;
-  left: 10px;
+  left: 0;
+  top: 0;
+  width: 50px;
+  height: 50px;
   background: none;
   border: none;
   margin-right: 1rem;
   padding: 0;
   color: var(--text-primary);
+  z-index: 11;
 }
 #chat-with-name {
   font-weight: 700;
+  z-index: 10;
   font-size: 1.2rem;
   color: var(--text-primary);
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
-  padding-left: 50px;
-  white-space: nowrap;
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  position: relative;
+  padding-left: 60px;
+}
+.chatWith{
+    padding-left: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    flex-direction: column;
+    gap: 5px;
 }
 #messages {
   overflow-y: auto;
@@ -751,6 +766,7 @@ body.webview #menu-btn{
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 11;
 }
 .chat-more button{
   all: unset;
@@ -766,7 +782,7 @@ body.webview #menu-btn{
 .chat-more button:hover{
   color: var(--secondary);
 }
-#video-call-screen{
+#video-call-screen, #audio-call-screen{
   position: fixed;
   left: -100%;
   pointer-events: none;
@@ -774,11 +790,12 @@ body.webview #menu-btn{
   bottom: 0;
   top: 0;
   background: var(--primary);
+  overflow: hidden;
   width: 100vw;
   height: 100vh;
-  z-index: 51;
+  z-index: 1000;
 }
-#video-call-screen.shown{
+#video-call-screen.shown, #audio-call-screen.shown{
   left: 0;
   pointer-events: auto;
 }
@@ -787,7 +804,7 @@ body.webview #menu-btn{
   height: 100%;
   object-fit: cover;
 }
-#video-call-screen #decline-video-call{
+#video-call-screen #decline-video-call, #audio-call-screen #decline-audio-call{
   z-index: 52;
   position: absolute;
   left: 50%;
@@ -821,7 +838,7 @@ body.webview #menu-btn{
   bottom: 20px;
   border: 2px solid var(--primary);
 }
-.incomingVideoCallUI{
+.incomingVideoCallUI, .incomingAudioCallUI{
   position: fixed;
   left: -100%;
   pointer-events: none;
@@ -838,11 +855,11 @@ body.webview #menu-btn{
   flex-direction: column;
   gap: 30px;
 }
-.incomingVideoCallUI.shown{
+.incomingVideoCallUI.shown, .incomingAudioCallUI.shown{
   left: 0;
   pointer-events: auto;
 }
-.videoCallerAvatar{
+.videoCallerAvatar, .audioCallerAvatar{
   font-size: 2.5rem;
   min-width: 200px;
   min-height: 200px;
@@ -852,7 +869,7 @@ body.webview #menu-btn{
   justify-content: center;
   align-items: center;
 }
-.videoCallBtns{
+.videoCallBtns, .audioCallBtns{
   position: absolute;
   bottom: 100px;
   left: 50%;
@@ -862,7 +879,7 @@ body.webview #menu-btn{
   align-items: center;
   gap: 20px;
 }
-.videoCallBtns button{
+.videoCallBtns button, .audioCallBtns button {
   all: unset;
   font-size: 1.2rem;
   display: flex;
@@ -874,6 +891,28 @@ body.webview #menu-btn{
   border-radius: 50%;
   color: white;
 }
-#video-decline-btn{
+#video-decline-btn, #audio-decline-btn{
   background: var(--offline);
+}
+
+.selectedUserData{
+    z-index: 1001;
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    font-size: 1.2rem;
+}
+.avatar, .avatarA, .avatarV{
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

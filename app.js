@@ -26,10 +26,9 @@ import {
     EmailAuthProvider,
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-let ringtone = new Audio("ringtone.mp3");
-ringtone.loop = true;
+// Data 
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "22-02-2026-07:18";
+let updateCode = "24-02-2026-01:30";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -41,33 +40,30 @@ const firebaseConfig = {
     appId: "1:379483530013:web:70486fb32ac7af3cf3f7f4",
     measurementId: "G-ZHXYV5DCNE"
 };
-
+// DB
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth();
 
+// ID Elements 
 const authSection = document.getElementById("auth-section");
 const main = document.getElementById("main");
 const logoutBtn = document.getElementById("logout-btn");
 const menuBtn = document.getElementById("menu-btn");
 const topRow = document.getElementById("topRow");
-
 const loginForm = document.getElementById("login-form");
 const signupForm = document.getElementById("signup-form");
 const loginBtn = document.getElementById("login-btn");
 const signupBtn = document.getElementById("signup-btn");
 const toSignup = document.getElementById("to-signup");
 const toLogin = document.getElementById("to-login");
-
 const liEmail = document.getElementById("li-email");
 const liPass = document.getElementById("li-password");
 const suEmail = document.getElementById("su-email");
 const suPass = document.getElementById("su-password");
 const suUsername = document.getElementById("su-username");
-
 const liToggle = document.getElementById("li-toggle");
 const suToggle = document.getElementById("su-toggle");
-
 const userlist = document.getElementById("userlist");
 const chatScreen = document.getElementById("chat-screen");
 const messagesDiv = document.getElementById("messages");
@@ -75,14 +71,16 @@ const chatWithName = document.getElementById("chat-with-name");
 const backBtn = document.getElementById("back-btn");
 const msgInput = document.getElementById("msg-input");
 const sendBtn = document.getElementById("send-btn");
-
+// Usage variables 
 let currentUser = null,
-    currentUsername = null;
-let currentChatId = null;
-let selectedUser = null;
-
-let usersRef = null;
-let usersListener = null;
+    currentUsername = null,
+    currentChatId = null,
+    selectedUser = null,
+    usersRef = null,
+    usersListener = null,
+    renderTimeout, 
+    holdTimer;
+// Listeners 
 
 toSignup.onclick = () => {
     loginForm.style.display = "none";
@@ -184,6 +182,7 @@ function changeAuth() {
             loadUsers();
             displaySaves();
             addVideoCallListener();
+            addAudioCallListener();
         } else {
             ((currentUser = null), (currentUsername = null));
             document
@@ -301,8 +300,8 @@ function openChat(uid, name) {
         const userData = snapshot.val();
         const statusText = userData.online
             ? "Online"
-            : `Last active: ${getRelativeTime(userData.lastLoginTime)}`;
-        chatWithName.innerHTML = `<div>${name}</div><small style="font-size:12px; opacity:0.8;">${statusText}</small>`;
+            : `${getRelativeTime(userData.lastLoginTime)}`;
+        chatWithName.innerHTML = `<div class="avatar" style="background:${userData.avatar}">${name[0]}</div><div class="chatWith"><p>${name}</p><small style="font-size:12px; opacity:0.8;">${statusText}</small></div>`;
     });
 
     // ... rest of your existing code
@@ -316,8 +315,6 @@ function openChat(uid, name) {
     msgInput.blur();
     loadMessages();
 }
-
-let renderTimeout, holdTimer;
 
 function loadMessages() {
     const chatRef = ref(db, "chats/" + currentChatId);
@@ -942,8 +939,25 @@ let peerConnection;
 videoCallBtn.onclick = () => showVideoCallScreen();
 declineVideoCallBtn.onclick = () => endCallGlobally();
 
+let callTimeoutID, callTimeout = 0;
 function showVideoCallScreen() {
+    callTimeoutID = setInterval(function() {
+        callTimeout++;
+        if(callTimeout === 1000){
+            endCallGlobally();
+        }
+    }, 10);
     videoCallScreen.classList.add("shown");
+    get(ref(db, `/users/${selectedUser}`)).then(snap => {
+        let u = snap.val();
+        let reg = new RegExp("<[^>]*>", "g");
+        let username = u.username.replace(reg);
+        document.querySelector('.username').innerHTML = username;
+        document.querySelector('.avatarV').innerHTML = username[0];
+        document.querySelector('.avatarV').style.background =
+            u.avatar;
+        
+    }).catch(e=> alert(e))
     navigator.mediaDevices
         .getUserMedia(constraints)
         .then(stream => {
@@ -953,9 +967,13 @@ function showVideoCallScreen() {
         .catch(e => {
             alert(e);
         });
+        
+    
 }
 
 function endCallGlobally() {
+    clearInterval(callTimeoutID);
+    callTimeout = 0;
     if (selectedUser) remove(ref(db, `calls/${selectedUser}`));
     if (currentUser) remove(ref(db, `calls/${currentUser.uid}`));
     videoCallScreen.classList.remove("shown");
@@ -1040,13 +1058,13 @@ function addVideoCallListener() {
 
 function showIncomingVideoCall(data) {
     selectedUser = data.from;
-    ringtone.currentTime = 0;
-    // ringtone.play();
     document.querySelector(".incomingVideoCallUI").classList.add("shown");
     get(ref(db, `/users/${selectedUser}`)).then(snap => {
         let u = snap.val();
-        document.getElementById("videoCallerName").innerHTML = u.username;
-        document.getElementById("videoCallerAvatar").innerHTML = u.username[0];
+        let reg = new RegExp("<[^>]*>", "g");
+        let username = u.username.replace(reg);
+        document.getElementById("videoCallerName").innerHTML = username;
+        document.getElementById("videoCallerAvatar").innerHTML = username[0];
         document.getElementById("videoCallerAvatar").style.background =
             u.avatar;
     });
@@ -1066,7 +1084,6 @@ function showIncomingVideoCall(data) {
 }
 function hideIncomingVideoCall() {
     document.querySelector(".incomingVideoCallUI").classList.remove("shown");
-    ringtone.pause();
 }
 
 async function answerIncomingVideoCall(data) {
@@ -1122,6 +1139,217 @@ async function answerIncomingVideoCall(data) {
     await peerConnection.setLocalDescription(answer);
 
     await set(ref(db, `calls/${currentUser.uid}`), {
+        ...data,
+        answer: JSON.stringify(answer)
+    });
+}
+
+
+// audio call
+const constraintsA = {
+    audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+    },
+    video: false
+};
+
+const audioCallBtn = document.getElementById("audio-call-btn");
+const declineAudioCallBtn = document.getElementById("decline-audio-call");
+const audioCallScreen = document.getElementById("audio-call-screen");
+const remoteAudioScreen = document.getElementById("remote-audio-screen");
+
+let peerConnectionA, audioCallStream;
+
+audioCallBtn.onclick = () => showAudioCallScreen();
+declineAudioCallBtn.onclick = () => endACallGlobally();
+
+function showAudioCallScreen() {
+    audioCallScreen.classList.add("shown");
+    callTimeoutID = setInterval(function() {
+        callTimeout++;
+        if(callTimeout === 1000){
+            endACallGlobally();
+        }
+    }, 10);
+    get(ref(db, `/users/${selectedUser}`)).then(snap => {
+        let u = snap.val();
+        let reg = new RegExp("<[^>]*>", "g");
+        let username = u.username.replace(reg);
+        document.querySelector('.usernameA').innerHTML = username;
+        document.querySelector('.avatarA').innerHTML = username[0];
+        document.querySelector('.avatarA').style.background =
+            u.avatar;
+    });
+    navigator.mediaDevices
+        .getUserMedia(constraintsA)
+        .then(stream => {
+            audioCallStream = stream
+            startAudioCalling();
+        })
+        .catch(e => {
+            alert(e);
+        });
+}
+
+function endACallGlobally() {
+    clearInterval(callTimeoutID);
+    callTimeout = 0;
+    if (selectedUser) remove(ref(db, `callsA/${selectedUser}`));
+    if (currentUser) remove(ref(db, `callsA/${currentUser.uid}`));
+    audioCallScreen.classList.remove("shown");
+    if (peerConnectionA) {
+        peerConnectionA.close();
+        peerConnectionA = null;
+    }
+}
+
+async function startAudioCalling() {
+    peerConnectionA = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+    peerConnectionA.candQueue = []; // Queue for race conditions
+
+    const stream = audioCallStream;
+    stream.getTracks().forEach(track => peerConnectionA.addTrack(track, stream));
+
+    peerConnectionA.ontrack = e => {
+        remoteAudioScreen.srcObject = e.streams[0];
+    };
+
+    peerConnectionA.onicecandidate = e => {
+        if (e.candidate)
+            push(
+                ref(db, `callsA/${selectedUser}/callerCandidates`),
+                e.candidate.toJSON()
+            );
+    };
+
+    // FIX: Queue candidates if Answer hasn't arrived yet!
+    onChildAdded(ref(db, `callsA/${selectedUser}/receiverCandidates`), snap => {
+        if (!snap.exists()) return;
+        const cand = new RTCIceCandidate(snap.val());
+        if (peerConnectionA.remoteDescription) {
+            peerConnectionA.addIceCandidate(cand);
+        } else {
+            peerConnectionA.candQueue.push(cand);
+        }
+    });
+
+    const offer = await peerConnectionA.createOffer();
+    await peerConnectionA.setLocalDescription(offer);
+
+    await set(ref(db, `callsA/${selectedUser}`), {
+        offer: JSON.stringify(offer),
+        from: currentUser.uid
+    });
+
+    onValue(ref(db, `callsA/${selectedUser}`), async snap => {
+        const data = snap.val();
+        if (!data) return endACallGlobally();
+        if (data.answer && peerConnectionA.signalingState !== "stable") {
+            await peerConnectionA.setRemoteDescription(
+                new RTCSessionDescription(JSON.parse(data.answer))
+            );
+            // Flush queued candidates
+            peerConnectionA.candQueue.forEach(c =>
+                peerConnectionA.addIceCandidate(c)
+            );
+            peerConnectionA.candQueue = [];
+        }
+    });
+}
+
+function addAudioCallListener() {
+    onValue(ref(db, `callsA/${currentUser.uid}`), snap => {
+        const data = snap.val();
+        if (data && data.offer && !data.answer) {
+            showIncomingAudioCall(data);
+        } else {
+            hideIncomingAudioCall();
+        }
+        if (!data && audioCallScreen.classList.contains("shown"))
+            endACallGlobally();
+    });
+}
+
+function showIncomingAudioCall(data) {
+    selectedUser = data.from;
+    document.querySelector(".incomingAudioCallUI").classList.add("shown");
+    get(ref(db, `/users/${selectedUser}`)).then(snap => {
+        let u = snap.val();
+        let reg = new RegExp("<[^>]*>", "g");
+        let username = u.username.replace(reg);
+        document.getElementById("audioCallerName").innerHTML = username;
+        document.getElementById("audioCallerAvatar").innerHTML = username[0];
+        document.getElementById("audioCallerAvatar").style.background =
+            u.avatar;
+    });
+
+    document.getElementById("audio-answer-btn").onclick = () => {
+        document
+            .querySelector(".incomingAudioCallUI")
+            .classList.remove("shown");
+        answerIncomingAudioCall(data);
+    };
+    document.getElementById("audio-decline-btn").onclick = () => {
+        document
+            .querySelector(".incomingAudioCallUI")
+            .classList.remove("shown");
+        endACallGlobally();
+    };
+}
+function hideIncomingAudioCall() {
+    document.querySelector(".incomingAudioCallUI").classList.remove("shown");
+}
+
+async function answerIncomingAudioCall(data) {
+    audioCallScreen.classList.add("shown");
+    const stream = await navigator.mediaDevices.getUserMedia(constraintsA);
+
+    peerConnectionA = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    });
+    peerConnectionA.candQueue = [];
+
+    stream.getTracks().forEach(track => peerConnectionA.addTrack(track, stream));
+
+    peerConnectionA.ontrack = e => {
+        remoteAudioScreen.srcObject = e.streams[0];
+    };
+
+    peerConnectionA.onicecandidate = e => {
+        if (e.candidate)
+            push(
+                ref(db, `callsA/${currentUser.uid}/receiverCandidates`),
+                e.candidate.toJSON()
+            );
+    };
+
+    onChildAdded(ref(db, `callsA/${currentUser.uid}/callerCandidates`), snap => {
+        if (!snap.exists()) return;
+        const cand = new RTCIceCandidate(snap.val());
+        if (peerConnectionA.remoteDescription) {
+            peerConnectionA.addIceCandidate(cand);
+        } else {
+            peerConnectionA.candQueue.push(cand);
+        }
+    });
+
+    await peerConnectionA.setRemoteDescription(
+        new RTCSessionDescription(JSON.parse(data.offer))
+    );
+    // Flush queued candidates
+    peerConnectionA.candQueue.forEach(cand =>
+        peerConnectionA.addIceCandidate(cand)
+    );
+    peerConnectionA.candQueue = [];
+
+    const answer = await peerConnectionA.createAnswer();
+    await peerConnectionA.setLocalDescription(answer);
+
+    await set(ref(db, `callsA/${currentUser.uid}`), {
         ...data,
         answer: JSON.stringify(answer)
     });
