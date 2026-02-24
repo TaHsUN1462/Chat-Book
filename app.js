@@ -28,7 +28,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 // Data 
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "24-02-2026-01:30";
+let updateCode = "24-02-2026-01:48";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -1198,6 +1198,7 @@ function endACallGlobally() {
     callTimeout = 0;
     if (selectedUser) remove(ref(db, `callsA/${selectedUser}`));
     if (currentUser) remove(ref(db, `callsA/${currentUser.uid}`));
+    if(audioCallStream) audioCallStream.getTracks().forEach(t => t.stop());
     audioCallScreen.classList.remove("shown");
     if (peerConnectionA) {
         peerConnectionA.close();
