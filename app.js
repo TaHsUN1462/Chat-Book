@@ -16,6 +16,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 import {
     getAuth,
+    signInWithPopup,
+    GoogleAuthProvider,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     onAuthStateChanged,
@@ -26,9 +28,9 @@ import {
     EmailAuthProvider,
     reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-// Data 
+// Data
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
-let updateCode = "24-02-2026-01:48";
+let updateCode = "06-03-2026-10:55";
 let hasUpdated = localStorage.getItem(updateCode) || "true";
 const firebaseConfig = {
     apiKey: "AIzaSyAyL5j7k__kQcD-gg4vUs0s1gEGivMirvQ",
@@ -44,8 +46,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth();
+const provider = new GoogleAuthProvider();
 
-// ID Elements 
+// ID Elements
 const authSection = document.getElementById("auth-section");
 const main = document.getElementById("main");
 const logoutBtn = document.getElementById("logout-btn");
@@ -71,20 +74,38 @@ const chatWithName = document.getElementById("chat-with-name");
 const backBtn = document.getElementById("back-btn");
 const msgInput = document.getElementById("msg-input");
 const sendBtn = document.getElementById("send-btn");
-// Usage variables 
+const moreBtn = document.getElementById("more-btn");
+const useGoogle = document.getElementById("useGoogle");
+// Usage variables
 let currentUser = null,
     currentUsername = null,
     currentChatId = null,
     selectedUser = null,
     usersRef = null,
     usersListener = null,
-    renderTimeout, 
+    renderTimeout,
     holdTimer;
-// Listeners 
+// Listeners
 
 toSignup.onclick = () => {
     loginForm.style.display = "none";
     signupForm.style.display = "flex";
+};
+
+useGoogle.onclick = () => {
+    signInWithPopup(auth, provider).then(userCred => {
+        const uid = userCred.user.uid;
+        const username = userCred.user.displayName;
+        const email = userCred.user.email;
+        let avatar = generateColor();
+        set(ref(db, "users/" + uid), {
+            username,
+            email,
+            online: true,
+            avatar,
+            lastLoginTime: Date.now()
+        });
+    });
 };
 
 toLogin.onclick = () => {
@@ -141,7 +162,13 @@ loginBtn.onclick = () => {
 
     signInWithEmailAndPassword(auth, email, password)
         .then(() => {
-            userIdSaved.push({ email: liEmail.value, pass: liPass.value });
+            let idExist = userIdSaved.find(i => i.email === liEmail.value);
+            if (idExist) {
+                idExist.email = liEmail.value;
+                idExist.password = liPass.value;
+            } else {
+                userIdSaved.push({ email: liEmail.value, pass: liPass.value });
+            }
             save();
             liEmail.value = "";
             liPass.value = "";
@@ -274,14 +301,14 @@ function loadUsers() {
                         ref(db, `users/${currentUser.uid}/contacts/${uid}`),
                         { unread: false }
                     );
-                openChat(uid, user.username);
+                openChat(uid, user.username, userDiv);
             };
 
             userDiv.onmousedown = () =>
-                (holdTimer = setTimeout(() => removeContact(uid), 1000));
+                (holdTimer = setTimeout(() => removeContact(uid), 500));
             userDiv.onmouseup = () => clearTimeout(holdTimer);
             userDiv.ontouchstart = () =>
-                (holdTimer = setTimeout(() => removeContact(uid), 1000));
+                (holdTimer = setTimeout(() => removeContact(uid), 500));
             userDiv.ontouchend = () => clearTimeout(holdTimer);
             userDiv.ontouchmove = () => clearTimeout(holdTimer);
             userlist.appendChild(userDiv);
@@ -290,8 +317,13 @@ function loadUsers() {
     };
     onValue(usersRef, usersListener);
 }
-
-function openChat(uid, name) {
+let currentChatDiv = null;
+function openChat(uid, name, userDiv) {
+    closeChat();
+    if(userDiv){
+        userDiv.classList.add("currentChatDiv")
+        currentChatDiv = userDiv;
+    }
     selectedUser = uid;
     currentChatId = [currentUser.uid, uid].sort().join("_");
 
@@ -302,6 +334,43 @@ function openChat(uid, name) {
             ? "Online"
             : `${getRelativeTime(userData.lastLoginTime)}`;
         chatWithName.innerHTML = `<div class="avatar" style="background:${userData.avatar}">${name[0]}</div><div class="chatWith"><p>${name}</p><small style="font-size:12px; opacity:0.8;">${statusText}</small></div>`;
+        let blocklist = userData.blocklist || {};
+        let blockedUsers = Object.values(blocklist);
+        if (blockedUsers?.includes(currentUser.uid)) {
+            msgInput.disabled = true;
+            sendBtn.disabled = true;
+            document.getElementById("blockBtn").onclick = () => closeMore();
+            document.getElementById("open-profile-btn").onclick = () =>
+                closeMore();
+            document.getElementById("audio-call-btn").onclick = () =>
+                alert("You are blocked by the user");
+            document.getElementById("video-call-btn").onclick = () =>
+                alert("You are blocked by the user");
+        } else {
+            msgInput.disabled = false;
+            sendBtn.disabled = false;
+            document.getElementById("blockBtn").innerHTML = "Block";
+            document.getElementById("blockBtn").onclick = () => blockUser();
+            document.getElementById("open-profile-btn").onclick = () =>
+                openProfile();
+            document.getElementById("audio-call-btn").onclick = () =>
+                showAudioCallScreen();
+            document.getElementById("video-call-btn").onclick = () =>
+                showVideoCallScreen();
+        }
+    });
+
+    get(ref(db, "users/" + currentUser.uid)).then(snapshot => {
+        const userData = snapshot.val();
+        let blocklist = userData.blocklist || {};
+        let blockedUsers = Object.values(blocklist);
+        if (blockedUsers?.includes(selectedUser)) {
+            document.getElementById("blockBtn").onclick = () => unblockUser();
+            document.getElementById("blockBtn").innerHTML = "Unblock";
+        } else {
+            document.getElementById("blockBtn").innerHTML = "Block";
+            document.getElementById("blockBtn").onclick = () => blockUser();
+        }
     });
 
     // ... rest of your existing code
@@ -310,9 +379,9 @@ function openChat(uid, name) {
     topRow.style.pointerEvents = "none";
     logoutBtn.style.opacity = "0";
     logoutBtn.style.pointerEvents = "none";
+    msgInput.blur();
     msgInput.disabled = false;
     sendBtn.disabled = false;
-    msgInput.blur();
     loadMessages();
 }
 
@@ -362,12 +431,15 @@ function loadMessages() {
                 div.innerHTML = `${msg.text}<div class="timestamp">${formatTime(
                     msg.time
                 )}${ticks}</div>`;
+                if (msg.type && msg.type == "call") {
+                    div.classList.add("called");
+                }
                 div.ontouchstart = () =>
-                    (holdTimer = setTimeout(() => handleHold(msg.key), 1000));
+                    (holdTimer = setTimeout(() => handleHold(msg.key), 500));
                 div.ontouchend = () => clearTimeout(holdTimer);
                 div.ontouchmove = () => clearTimeout(holdTimer); // Resets if you scroll!
                 div.onmousedown = () =>
-                    (holdTimer = setTimeout(() => handleHold(msg.key), 1000));
+                    (holdTimer = setTimeout(() => handleHold(msg.key), 500));
                 div.onmouseup = () => clearTimeout(holdTimer);
 
                 messagesDiv.appendChild(div);
@@ -417,6 +489,7 @@ function closeChat() {
     update(ref(db, `users/${currentUser.uid}/contacts/${selectedUser}`), {
         unread: false
     });
+    if(currentChatDiv) currentChatDiv.classList.remove("currentChatDiv")
     chatScreen.classList.remove("active");
     topRow.style.opacity = "1";
     topRow.style.pointerEvents = "auto";
@@ -551,7 +624,7 @@ document.querySelectorAll("#useSaved").forEach(el =>
 
 function deleteIdFromSaved(e, index) {
     e.stopPropagation();
-    confirm("Are you sure you want to remove this from saved accounts?", () => {
+    confirm("Remove from saved accounts?", () => {
         userIdSaved.splice(index, 1);
         displaySaves();
         save();
@@ -939,25 +1012,26 @@ let peerConnection;
 videoCallBtn.onclick = () => showVideoCallScreen();
 declineVideoCallBtn.onclick = () => endCallGlobally();
 
-let callTimeoutID, callTimeout = 0;
-function showVideoCallScreen() {
-    callTimeoutID = setInterval(function() {
+let callTimeoutID,
+    callTimeout = 0;
+export function showVideoCallScreen() {
+    callTimeoutID = setInterval(function () {
         callTimeout++;
-        if(callTimeout === 1000){
+        if (callTimeout === 1000) {
             endCallGlobally();
         }
     }, 10);
     videoCallScreen.classList.add("shown");
-    get(ref(db, `/users/${selectedUser}`)).then(snap => {
-        let u = snap.val();
-        let reg = new RegExp("<[^>]*>", "g");
-        let username = u.username.replace(reg);
-        document.querySelector('.username').innerHTML = username;
-        document.querySelector('.avatarV').innerHTML = username[0];
-        document.querySelector('.avatarV').style.background =
-            u.avatar;
-        
-    }).catch(e=> alert(e))
+    get(ref(db, `/users/${selectedUser}`))
+        .then(snap => {
+            let u = snap.val();
+            let reg = new RegExp("<[^>]*>", "g");
+            let username = u.username.replace(reg);
+            document.querySelector(".username").innerHTML = username;
+            document.querySelector(".avatarV").innerHTML = username[0];
+            document.querySelector(".avatarV").style.background = u.avatar;
+        })
+        .catch(e => alert(e));
     navigator.mediaDevices
         .getUserMedia(constraints)
         .then(stream => {
@@ -967,12 +1041,19 @@ function showVideoCallScreen() {
         .catch(e => {
             alert(e);
         });
-        
-    
 }
-
+window.showVideoCallScreen = showVideoCallScreen;
 function endCallGlobally() {
     clearInterval(callTimeoutID);
+    const ts = Date.now();
+    let text = "Video Call";
+    let type = "call";
+    push(ref(db, `chats/${currentChatId}`), {
+        sender: currentUser.uid,
+        text,
+        type,
+        time: ts
+    });
     callTimeout = 0;
     if (selectedUser) remove(ref(db, `calls/${selectedUser}`));
     if (currentUser) remove(ref(db, `calls/${currentUser.uid}`));
@@ -998,6 +1079,9 @@ async function startCalling() {
     peerConnection.ontrack = e => {
         localVideoScreen.classList.add("small");
         remoteVideoScreen.srcObject = e.streams[0];
+        callingTimeIDV = setInterval(function () {
+            callingTimeV++;
+        }, 1000);
     };
 
     peerConnection.onicecandidate = e => {
@@ -1144,7 +1228,6 @@ async function answerIncomingVideoCall(data) {
     });
 }
 
-
 // audio call
 const constraintsA = {
     audio: {
@@ -1165,11 +1248,11 @@ let peerConnectionA, audioCallStream;
 audioCallBtn.onclick = () => showAudioCallScreen();
 declineAudioCallBtn.onclick = () => endACallGlobally();
 
-function showAudioCallScreen() {
+export function showAudioCallScreen() {
     audioCallScreen.classList.add("shown");
-    callTimeoutID = setInterval(function() {
+    callTimeoutID = setInterval(function () {
         callTimeout++;
-        if(callTimeout === 1000){
+        if (callTimeout === 1000) {
             endACallGlobally();
         }
     }, 10);
@@ -1177,28 +1260,36 @@ function showAudioCallScreen() {
         let u = snap.val();
         let reg = new RegExp("<[^>]*>", "g");
         let username = u.username.replace(reg);
-        document.querySelector('.usernameA').innerHTML = username;
-        document.querySelector('.avatarA').innerHTML = username[0];
-        document.querySelector('.avatarA').style.background =
-            u.avatar;
+        document.querySelector(".usernameA").innerHTML = username;
+        document.querySelector(".avatarA").innerHTML = username[0];
+        document.querySelector(".avatarA").style.background = u.avatar;
     });
     navigator.mediaDevices
         .getUserMedia(constraintsA)
         .then(stream => {
-            audioCallStream = stream
+            audioCallStream = stream;
             startAudioCalling();
         })
         .catch(e => {
             alert(e);
         });
 }
-
+window.showAudioCallScreen = showAudioCallScreen;
 function endACallGlobally() {
     clearInterval(callTimeoutID);
+    const ts = Date.now();
+    let text = "Voice Call";
+    let type = "call";
+    push(ref(db, `chats/${currentChatId}`), {
+        sender: currentUser.uid,
+        text,
+        type,
+        time: ts
+    });
     callTimeout = 0;
     if (selectedUser) remove(ref(db, `callsA/${selectedUser}`));
     if (currentUser) remove(ref(db, `callsA/${currentUser.uid}`));
-    if(audioCallStream) audioCallStream.getTracks().forEach(t => t.stop());
+    if (audioCallStream) audioCallStream.getTracks().forEach(t => t.stop());
     audioCallScreen.classList.remove("shown");
     if (peerConnectionA) {
         peerConnectionA.close();
@@ -1213,7 +1304,9 @@ async function startAudioCalling() {
     peerConnectionA.candQueue = []; // Queue for race conditions
 
     const stream = audioCallStream;
-    stream.getTracks().forEach(track => peerConnectionA.addTrack(track, stream));
+    stream
+        .getTracks()
+        .forEach(track => peerConnectionA.addTrack(track, stream));
 
     peerConnectionA.ontrack = e => {
         remoteAudioScreen.srcObject = e.streams[0];
@@ -1314,7 +1407,9 @@ async function answerIncomingAudioCall(data) {
     });
     peerConnectionA.candQueue = [];
 
-    stream.getTracks().forEach(track => peerConnectionA.addTrack(track, stream));
+    stream
+        .getTracks()
+        .forEach(track => peerConnectionA.addTrack(track, stream));
 
     peerConnectionA.ontrack = e => {
         remoteAudioScreen.srcObject = e.streams[0];
@@ -1328,15 +1423,18 @@ async function answerIncomingAudioCall(data) {
             );
     };
 
-    onChildAdded(ref(db, `callsA/${currentUser.uid}/callerCandidates`), snap => {
-        if (!snap.exists()) return;
-        const cand = new RTCIceCandidate(snap.val());
-        if (peerConnectionA.remoteDescription) {
-            peerConnectionA.addIceCandidate(cand);
-        } else {
-            peerConnectionA.candQueue.push(cand);
+    onChildAdded(
+        ref(db, `callsA/${currentUser.uid}/callerCandidates`),
+        snap => {
+            if (!snap.exists()) return;
+            const cand = new RTCIceCandidate(snap.val());
+            if (peerConnectionA.remoteDescription) {
+                peerConnectionA.addIceCandidate(cand);
+            } else {
+                peerConnectionA.candQueue.push(cand);
+            }
         }
-    });
+    );
 
     await peerConnectionA.setRemoteDescription(
         new RTCSessionDescription(JSON.parse(data.offer))
@@ -1355,3 +1453,106 @@ async function answerIncomingAudioCall(data) {
         answer: JSON.stringify(answer)
     });
 }
+
+moreBtn.onclick = () => {
+    openMore();
+};
+function openMore() {
+    document.querySelector(".more").classList.add("shown");
+    document.querySelector(".chat-overlay").classList.add("shown");
+}
+function closeMore() {
+    document.querySelector(".more").classList.remove("shown");
+    document.querySelector(".chat-overlay").classList.remove("shown");
+}
+document.querySelector(".chat-overlay").onclick = () => {
+    closeMore();
+};
+document.querySelector(".backProfile").onclick = () => {
+    closeProfile();
+};
+
+document.getElementById("open-profile-btn").onclick = () => {
+    openProfile();
+};
+
+function openProfile() {
+    closeMore();
+    if (selectedUser === null) {
+        alert("Error opening profile");
+        return;
+    }
+    get(ref(db, `/users/${selectedUser}`)).then(snap => {
+        let data = snap.val();
+
+        let reg = new RegExp("<[^>]*>", "g");
+        let username = data.username.replace("reg");
+
+        document.querySelector(".selectedAvatar").innerHTML = username[0];
+        document.querySelector(".selectedAvatar").style.background =
+            data.avatar;
+        document.querySelector(".selectedUsername").innerHTML = username;
+    });
+    document.querySelector(".profilePage").classList.add("shown");
+}
+function closeProfile() {
+    document.querySelector(".profilePage").classList.remove("shown");
+}
+
+document.getElementById("blockBtn").onclick = () => {
+    blockUser();
+};
+
+function blockUser() {
+    closeMore();
+    if (selectedUser === null) {
+        alert("Error blocking");
+        return;
+    }
+    if (currentUser == null) return;
+    get(ref(db, "/users/" + currentUser.uid))
+        .then(snap => {
+            let data = snap.val();
+            let blocklist = data.blocklist || {};
+            let blockedUsers = Object.values(blocklist);
+            if (blockedUsers?.includes(selectedUser)) {
+                alert("The user is already blocked!");
+                return;
+            }
+            push(ref(db, `/users/${currentUser.uid}/blocklist`), selectedUser);
+            alert("Blocked the user");
+            document.getElementById("blockBtn").innerHTML = "Unblock";
+            document.getElementById("blockBtn").onclick = () => unblockUser();
+        })
+        .catch(e => alert(e));
+}
+function unblockUser() {
+    closeMore();
+    if (selectedUser === null) {
+        alert("Error unblocking");
+        return;
+    }
+    if (currentUser == null) return;
+    confirm("Do you really want to unblock?", () => {
+        get(ref(db, "/users/" + currentUser.uid))
+            .then(snap => {
+                let data = snap.val();
+                let blocklist = data.blocklist || {};
+                let blockedUsers = Object.values(blocklist);
+                if (!blockedUsers.includes(selectedUser)) {
+                    alert("The user is not blocked!");
+                    return;
+                }
+                remove(
+                    ref(db, `/users/${currentUser.uid}/blocklist`),
+                    selectedUser
+                );
+                alert("Unblocked the user");
+                document.getElementById("blockBtn").innerHTML = "Block";
+                document.getElementById("blockBtn").onclick = () => blockUser();
+            })
+            .catch(e => alert(e));
+    });
+}
+
+window.userIdSaved = userIdSaved;

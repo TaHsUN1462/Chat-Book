@@ -45,6 +45,7 @@ body, html {
   user-select: none;
 }
 #app {
+    padding-top: 30px;
   width: 100%;
   height: 100%;
   display: flex;
@@ -132,6 +133,7 @@ button:hover {
   position: relative;
 }
 #userlist-screen {
+    width: 100%;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -326,7 +328,7 @@ button:hover {
   right: 0;
   border: none;
   width: 100%;
-  height: 50px;
+  height: auto;
   padding: 10px;
   display: flex;
   justify-content: space-between;
@@ -337,16 +339,16 @@ button:hover {
   padding: 10px;
   outline: none;
   box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-  height: 45px;
   width: 100%;
   line-height: 0.8rem;
-  max-height: 100px;
   border-radius: 25px;
-  overflow-y: auto;
   border: none;
   background: var(--primary-light);
   caret-color: var(--caret);
   color: var(--text-primary);
+  min-height: 40px;
+  max-height: 200px;
+  field-sizing: content;
 }
 .sendRow #send-btn{
   all: unset;
@@ -501,6 +503,8 @@ button:hover {
   justify-content: start;
   align-items: center;
   flex-direction: column;
+  margin-bottom: 20px;
+  margin-top: 10px;
 }
 .myavatar{
   width: 150px;
@@ -514,51 +518,78 @@ button:hover {
 }
 .menu{
   position: fixed;
-  width: 300px;
-  padding: 30px 10px;
-  border: 1px solid #000;
+  width: 100vw;
+  height: 100vh;
+  left: -100%;right: 0;bottom: 0;top: 0;
+  padding: 50px 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-direction: column;
+  background: var(--primary);
+  color: var(--text-primary);
+  z-index: 100;
+  overflow: hidden;
+}
+.menu .list {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+.menu.shown{
+  left: 0;
+}
+.menu .list button{
+  all: unset;
+  box-sizing: border-box;
+  min-height: 150px;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  flex-direction: column;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-  background: var(--secondary-light);
-  border-radius: 20px;
-  scale: 0;
-  transform-origin: left top;
-  z-index: 100;
-}
-.menu.shown{
-  scale: 1;
-}
-@media(orientation: landscape){
-  .menu{
-    overflow: auto;
-    height: 300px;
-  }
-}
-.menu button{
-  all: unset;
-  width: 100%;
-  border-radius: 0px;
-  min-height: 60px;
-  height: 60px;
-  background: var(--secondary);
+  background: var(--primary);
   color: var(--text-primary-dark);
-  text-align: center;
-  border-radius: 10px;
+  font-size: 1.5rem;
+  padding: 0 20px;
+}
+.menu button svg{
+  font-size: 3rem;
+}
+.menu button:hover{
+  background: var(--primary-light);
+}
+.menu .topRow{
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 50px;
+  background: var(--secondary-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.menu .close{
+  all: unset;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: none;
+  color: var(--text-primary);
 }
 .menu #delete-account-btn{
   color: var(--offline);
 }
 #menu-btn{
   all: unset;
-  position: fixed;
+  position: absolute;
   right: 0;
-  top: 0;
+  top: 30px;
   height: 50px;
   width: 50px;
   display: flex;
@@ -567,10 +598,7 @@ button:hover {
   display: none;
   font-size: 1.2rem;
 }
-body.webview #menu-btn{
-  top: 50px;
-}
-.menu .close, .usernameChange .close, .passwordChange .close{
+.usernameChange .close, .passwordChange .close{
   all: unset;
   position: absolute;
   top: 0;
@@ -594,7 +622,7 @@ body.webview #menu-btn{
   display: flex;
   justify-content: center;
   align-items: center;
-  color: black;
+  color: var(--text-primary);
 }
 .loader .loaderbar{
   position: absolute;
@@ -635,6 +663,7 @@ body.webview #menu-btn{
   transform-origin: left top;
   scale: 0;
   background: var(--primary-light);
+  color: var(--text-primary);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -915,4 +944,159 @@ body.webview #menu-btn{
     display: flex;
     justify-content: center;
     align-items: center;
+}
+.avatar{
+  width: 40px;height: 40px;
+}
+.more{
+  position: fixed;
+  right: 10px;top: -30px;
+  border-radius: 10px;
+  background: var(--primary);
+  width: 150px;
+  min-height: 75px;
+  z-index: 51;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-direction: column;
+  padding: 10px 0;
+  border: 0.5px solid var(--primary-light);
+  color: var(--text-primary);
+  pointer-events: none;
+  opacity: 0;
+}
+.more.shown{
+  opacity: 1;
+  pointer-events: auto;
+  top: 50px;
+}
+.more button{
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 37.5px;
+}
+.more button:hover{
+  background: var(--primary-light);
+}
+.chat-overlay{
+  position: fixed;
+  inset: 0;
+  background: none;
+  pointer-events: none;
+  z-index: 50;
+}
+.chat-overlay.shown{
+  pointer-events: auto;
+}
+.dangerText{
+  color: var(--offline);
+}
+.profilePage{
+  position: fixed;
+  right: 0;bottom: 0;
+  left: -100%;top: 0;
+  background: var(--primary);
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-direction: column;
+  color: var(--text-primary);
+  padding: 10px;
+  padding-top: 50px;
+  width: 100vw;
+  z-index: 52;
+}
+.profilePage.shown{
+  left: 0;
+}
+.profilePage .topRow{
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 50px;
+  background: var(--primary-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-primary);
+}
+.back{
+  all: unset;
+  font-size: 1.2rem;
+  position: absolute;
+  left: 0;top: 0;
+  width: 50px;height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.selectedAvatar{
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: red;
+  width: 100px;height: 100px;
+  border-radius: 50%;
+  font-size: 3rem;
+}
+.selectedUsername{
+  font-size: 2rem;
+  margin-top: 10px;
+  font-weight: 600;
+}
+.callDiv{
+  margin-top: 10px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.callDiv div{
+  color: var(--secondary);
+  height: 70px;
+  width: 100%;
+  border: 1px solid var(--text-primary);
+  border-radius: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+}
+.blockBtn{
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+}
+.called{
+  border: 1px solid var(--secondary);
+  padding: 20px;
+}
+.logo{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.currentChatDiv{
+    background: var(--primary-light);
+}
+@media(min-width: 768px){
+    #chat-screen{
+        width: 50%;
+        transform: translateX(100%);
+    }
+    #chat-screen.active{
+        transform: translateX(100%);
+    }
+    #app:has(#chat-screen.active) #userlist-screen {
+        width: 50%;
+    }
 }
