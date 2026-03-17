@@ -46,21 +46,14 @@ const firebaseConfig = {
     measurementId: "G-ZHXYV5DCNE"
 };
 // DB
-Notification.requestPermission().then(permission => {
-  if (permission === "granted") {
-    console.log("Notifications allowed");
-  } else {
-    console.log("Notifications denied");
-  }
-});
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 const messaging = getMessaging(app);
 getToken(messaging, { vapidKey: "BENKrrZ_hiANF7C3UQtqyvPe9YYY2W-qSHBV03hsRZc6s-QKg5nZ1YTClG6JbhOcFqPDJ9Z7cgBteiByOb9BPVY" })
-  .then(token => console.log("FCM Token:", token))
-  .catch(err => console.log(err));
+  .then(token => alert("FCM Token:"+ token))
+  .catch(err => alert(err));
 // ID Elements
 const authSection = document.getElementById("auth-section");
 const main = document.getElementById("main");
