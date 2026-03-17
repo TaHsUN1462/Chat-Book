@@ -51,8 +51,15 @@ const db = getDatabase(app);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 const messaging = getMessaging(app);
-getToken(messaging, { vapidKey: "BENKrrZ_hiANF7C3UQtqyvPe9YYY2W-qSHBV03hsRZc6s-QKg5nZ1YTClG6JbhOcFqPDJ9Z7cgBteiByOb9BPVY" })
-  .then(token => alert("FCM Token:"+ token))
+
+navigator.serviceWorker.register('/WhatsUp/firebase-messaging-sw.js', { scope: '/WhatsUp/' })
+  .then((registration) => {
+    return getToken(messaging, {
+      vapidKey: "BENKrrZ_hiANF7C3UQtqyvPe9YYY2W-qSHBV03hsRZc6s-QKg5nZ1YTClG6JbhOcFqPDJ9Z7cgBteiByOb9BPVY",
+      serviceWorkerRegistration: registration
+    });
+  })
+  .then(token => alert("FCM Token: " + token))
   .catch(err => alert(err));
 // ID Elements
 const authSection = document.getElementById("auth-section");
