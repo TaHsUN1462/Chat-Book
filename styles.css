@@ -11,6 +11,9 @@
   --offline: #c0134d;
   --avatar-color: #888;
   --caret: #28a363;
+  --loading-bubble: #02413e;
+  --loading-bubble-mid: #047d77;
+  --loading-bubble-filled: #07bdb4;
 }
 .dark{
   --primary: #0b1014;
@@ -241,6 +244,7 @@ button:hover {
   padding-right: 25px;
   border-radius: 12px;
   word-break: break-word;
+  white-space: pre-wrap;
   position: relative;
   font-size: 0.95rem;
 }
@@ -332,7 +336,7 @@ button:hover {
   padding: 10px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: end;
   gap: 10px;
 }
 .sendRow #msg-input{
@@ -346,16 +350,16 @@ button:hover {
   background: var(--primary-light);
   caret-color: var(--caret);
   color: var(--text-primary);
-  min-height: 40px;
+  min-height: 50px;
   max-height: 200px;
   field-sizing: content;
 }
 .sendRow #send-btn{
   all: unset;
   box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-  height: 50px !important;
-  width: 50px !important;
-  min-width: 50px !important;
+  height: 60px !important;
+  width: 60px !important;
+  min-width: 60px !important;
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -519,9 +523,9 @@ button:hover {
 .menu{
   position: fixed;
   width: 100vw;
-  height: 100vh;
+  height: 100%;
   left: -100%;right: 0;bottom: 0;top: 0;
-  padding: 50px 0;
+  padding: 80px 0;
   display: flex;
   justify-content: flex-start;
   align-items: center;
@@ -563,7 +567,7 @@ button:hover {
   left: 0;
   top: 0;
   right: 0;
-  height: 50px;
+  height: 80px;
   background: var(--secondary-light);
   display: flex;
   justify-content: center;
@@ -575,7 +579,7 @@ button:hover {
   top: 0;
   left: 0;
   width: 50px;
-  height: 50px;
+  height: 80px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1004,7 +1008,7 @@ button:hover {
   flex-direction: column;
   color: var(--text-primary);
   padding: 10px;
-  padding-top: 50px;
+  padding-top: 80px;
   width: 100vw;
   z-index: 52;
 }
@@ -1016,7 +1020,7 @@ button:hover {
   left: 0;
   top: 0;
   right: 0;
-  height: 50px;
+  height: 80px;
   background: var(--primary-light);
   display: flex;
   justify-content: center;
@@ -1028,7 +1032,7 @@ button:hover {
   font-size: 1.2rem;
   position: absolute;
   left: 0;top: 0;
-  width: 50px;height: 50px;
+  width: 50px;height: 80px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1087,6 +1091,60 @@ button:hover {
 }
 .currentChatDiv{
     background: var(--primary-light);
+}
+.bootup{
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    background: var(--primary);
+    opacity: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+.bootup img{
+    width: 100px;
+    animation: revUp 2s ease-in-out 1 forwards;
+}
+.loading-bubble-wrapper{
+    position: absolute;
+    top: 50%;
+    width: max-content;
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+    align-items: center;
+}
+.loading-bubble-wrapper .bubbles{
+    --w: 10px;
+    width: var(--w);
+    height: var(--w);
+    background: var(--loading-bubble);
+    border-radius: 50%;
+}
+.loading-bubble-wrapper .bubbles.filled{
+    background: var(--loading-bubble-filled);
+    animation: flick 1.25s linear infinite;
+}
+@keyframes flick{
+    0%, 100%{
+        background: var(--loading-bubble-mid);
+    }50%{
+        background: var(--loading-bubble-filled);
+        
+    }
+}
+@keyframes revUp{
+    0%{
+        transform: scale(0.5) rotate(50deg);
+    }20%{
+        transform: scale(1.2) rotate(0deg);
+    }70%{
+        transform: scale(1) rotate(0deg);
+    }100%{
+        transform: scale(1) rotate(0deg) translateY(-80px);
+    }
 }
 @media(min-width: 768px){
     #chat-screen{

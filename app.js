@@ -26,8 +26,11 @@ import {
     deleteUser,
     updatePassword,
     EmailAuthProvider,
+    signInWithRedirect,
+    getRedirectResult,
     reauthenticateWithCredential
-} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js"
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging.js";
 // Data
 let userIdSaved = JSON.parse(localStorage.getItem("userIdSaved")) || [];
 let updateCode = "06-03-2026-10:55";
@@ -43,11 +46,21 @@ const firebaseConfig = {
     measurementId: "G-ZHXYV5DCNE"
 };
 // DB
+Notification.requestPermission().then(permission => {
+  if (permission === "granted") {
+    console.log("Notifications allowed");
+  } else {
+    console.log("Notifications denied");
+  }
+});
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
-
+const messaging = getMessaging(app);
+getToken(messaging, { vapidKey: "BENKrrZ_hiANF7C3UQtqyvPe9YYY2W-qSHBV03hsRZc6s-QKg5nZ1YTClG6JbhOcFqPDJ9Z7cgBteiByOb9BPVY" })
+  .then(token => console.log("FCM Token:", token))
+  .catch(err => console.log(err));
 // ID Elements
 const authSection = document.getElementById("auth-section");
 const main = document.getElementById("main");
@@ -92,21 +105,39 @@ toSignup.onclick = () => {
     signupForm.style.display = "flex";
 };
 
+// useGoogle.onclick = () => {
+//     signInWithPopup(auth, provider).then(userCred => {
+//         const uid = userCred.user.uid;
+//         const username = userCred.user.displayName;
+//         const email = userCred.user.email;
+//         let avatar = generateColor();
+//         set(ref(db, "users/" + uid), {
+//             username,
+//             email,
+//             online: true,
+//             avatar,
+//             lastLoginTime: Date.now()
+//         });
+//     });
+// };
 useGoogle.onclick = () => {
-    signInWithPopup(auth, provider).then(userCred => {
-        const uid = userCred.user.uid;
-        const username = userCred.user.displayName;
-        const email = userCred.user.email;
-        let avatar = generateColor();
-        set(ref(db, "users/" + uid), {
-            username,
-            email,
-            online: true,
-            avatar,
-            lastLoginTime: Date.now()
-        });
-    });
+    signInWithRedirect(auth, provider);
 };
+
+getRedirectResult(auth).then(userCred => {
+    if(!userCred) return;
+    const uid = userCred.user.uid;
+    const username = userCred.user.displayName;
+    const email = userCred.user.email;
+    let avatar = generateColor();
+    set(ref(db, "users/" + uid), {
+        username,
+        email,
+        online: true,
+        avatar,
+        lastLoginTime: Date.now()
+    });
+});
 
 toLogin.onclick = () => {
     signupForm.style.display = "none";
@@ -903,7 +934,7 @@ document.addEventListener("DOMContentLoaded", () => {
         promptInputType: "text",
         alertTakeCallback: true
     };
-    Dialogs.initialize(dialogConfig);
+    if(typeof Dialogs !== "undefined") Dialogs.initialize(dialogConfig);
 });
 async function searchUser(query) {
     const searchContainer = document.getElementById("searchedUsers");

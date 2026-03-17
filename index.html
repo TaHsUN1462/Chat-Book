@@ -8,6 +8,19 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="">
+    <div class="bootup">
+        <div class="app-icon">
+            <img src="app-icon.png">
+            <button onclick="Notification.requestPermission()">Enable Notifications</button>
+        </div>
+        <div class="loading-bubble-wrapper">
+            <div class="bubbles filled"></div>
+            <div class="bubbles"></div>
+            <div class="bubbles"></div>
+            <div class="bubbles"></div>
+            <div class="bubbles"></div>
+        </div>
+    </div>
   <div id="app">
     <header id="topRow">
       <div style="text-align:center;width:100%">WhatsUp</div>
@@ -287,7 +300,7 @@ function back(){
   document.querySelector('.overlay').classList.remove('shown')
 }
   </script>
-  <script src="dialogs.js"></script>
+  <!-- <script src="dialogs.js"></script> -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
